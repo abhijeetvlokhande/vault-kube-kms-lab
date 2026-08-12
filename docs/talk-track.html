@@ -371,7 +371,7 @@ vault read auth/approle/role/kube-kms</div>
   <div class="qa">
     <div class="qa-q">Question: "Does this slow things down?"</div>
     <div class="qa-a">
-      "The plugin runs on the same node as the API server and communicates over a local Unix socket — it's just a file on disk, not a network call. Round-trip latency is typically under 5 milliseconds. For most applications you won't notice it. We can actually see the latency numbers in the metrics at the end."
+      "The plugin runs on the same node as the API server and communicates over a local Unix socket — it's just a file on disk, not a network call. Latency should be in single-digit milliseconds since there's no network involved. We can see the actual numbers in the metrics at the end — keep in mind this is a laptop running everything at once, so don't compare to a production cluster."
     </div>
   </div>
 

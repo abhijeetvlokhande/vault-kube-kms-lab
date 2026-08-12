@@ -256,15 +256,15 @@ path "sys/license/status" {
 EOF</div>
 
   <div class="step-label">Create the AppRole</div>
-  <div class="cmd"><span class="cmt"># Create the role</span>
+  <div class="cmd"><span class="cmt"># Create the role — role_id must be set explicitly so --approle-role-id=lab-kube-kms works</span>
 vault write auth/approle/role/kube-kms \
-  role_name="kube-kms" \
+  role_id="lab-kube-kms" \
   token_policies="transit-encrypt-decrypt" \
   token_ttl=1h \
   token_max_ttl=4h \
   secret_id_num_uses=0
 
-<span class="cmt"># Read the fixed role-id</span>
+<span class="cmt"># Confirm role-id is exactly "lab-kube-kms"</span>
 vault read auth/approle/role/kube-kms/role-id
 
 <span class="cmt"># Generate a secret-id (save this — it is needed by the plugin)</span>
@@ -278,7 +278,7 @@ SECRET_ID=$(vault write -force -format=json \
 
 mkdir -p .lab-state
 echo "$SECRET_ID" &gt; .lab-state/approle-secret-id
-chmod 600 .lab-state/approle-secret-id</div>
+chmod 0400 .lab-state/approle-secret-id</div>
 
   <!-- ── SECTION 3: Kind cluster ─────────────────────────────────────── -->
   <div class="section-hdr">
