@@ -23,22 +23,12 @@ if ! docker exec "$CONTAINER" test -S /tmp/vault-kube-kms.socket 2>/dev/null; th
 fi
 
 # Confirm the encryption config file is visible inside the apiserver container.
-# It should be there via the kubeadmConfigPatches extraVolumes bind-mount.
-# If it's missing, the cluster was created with an old kind-config.yaml.
-APISERVER_CONTAINER_ID=$(docker exec "$CONTAINER" crictl ps --name kube-apiserver -q 2>/dev/null | head -1)
-if [[ -n "$APISERVER_CONTAINER_ID" ]]; then
-    MOUNTS=$(docker exec "$CONTAINER" crictl inspect "$APISERVER_CONTAINER_ID" 2>/dev/null \
-        | python3 -c "
-import sys,json
-d=json.load(sys.stdin)
-paths=[m.get('container_path','') for m in d.get('info',{}).get('config',{}).get('mounts',[])]
-print('\n'.join(paths))
-" 2>/dev/null)
-    if ! echo "$MOUNTS" | grep -q "encryption-config"; then
-        error "encryption-config.yaml is not mounted into the apiserver container.
+# It must be present via the kubeadmConfigPatches extraVolumes bind-mount.
+# If it is missing the cluster was created with an old kind-config.yaml.
+if ! docker exec "$CONTAINER" test -f /etc/kubernetes/encryption-config.yaml 2>/dev/null; then
+    error "encryption-config.yaml not found at /etc/kubernetes/encryption-config.yaml inside the node.
 The cluster was likely created without kubeadmConfigPatches.
 Run: make clean && make bootstrap"
-    fi
 fi
 
 # ── Backup manifest ───────────────────────────────────────────────────────────
@@ -47,23 +37,26 @@ log "Backed up manifest to $BACKUP_MANIFEST"
 
 # ── Add the flag (idempotent) ─────────────────────────────────────────────────
 if docker exec "$CONTAINER" grep -q 'encryption-provider-config' "$APISERVER_MANIFEST" 2>/dev/null; then
-    log "encryption-provider-config flag already present in manifest"
+    log "encryption-provider-config flag already present in manifest — skipping patch"
 else
-    docker exec "$CONTAINER" python3 - <<'PYEOF'
-manifest_path = "/etc/kubernetes/manifests/kube-apiserver.yaml"
-with open(manifest_path, "r") as f:
-    content = f.read()
-content = content.replace(
-    "    - kube-apiserver\n",
-    "    - kube-apiserver\n"
-    "    - --encryption-provider-config=/etc/kubernetes/encryption-config.yaml\n"
-    "    - --encryption-provider-config-automatic-reload=true\n"
-)
-with open(manifest_path, "w") as f:
-    f.write(content)
-print("Manifest patched: added encryption-provider-config flags")
-PYEOF
-    log "Added --encryption-provider-config to kube-apiserver manifest"
+    # Use awk inside a bash -c string so there is no heredoc / stdin to pass.
+    # awk inserts the two flags on the line immediately after '- kube-apiserver',
+    # writes to a tmp file, then mv atomically replaces the manifest.
+    docker exec "$CONTAINER" bash -c '
+        awk "/- kube-apiserver/{print; print \"    - --encryption-provider-config=/etc/kubernetes/encryption-config.yaml\"; print \"    - --encryption-provider-config-automatic-reload=true\"; next}1" \
+            /etc/kubernetes/manifests/kube-apiserver.yaml \
+            > /tmp/apiserver-patched.yaml \
+        && mv /tmp/apiserver-patched.yaml /etc/kubernetes/manifests/kube-apiserver.yaml
+    '
+
+    # Verify the patch actually landed
+    PATCH_COUNT=$(docker exec "$CONTAINER" grep -c 'encryption-provider-config' "$APISERVER_MANIFEST" 2>/dev/null || echo 0)
+    if [[ "$PATCH_COUNT" -lt 2 ]]; then
+        log "Manifest patch verification failed — restoring backup"
+        docker exec "$CONTAINER" cp "$BACKUP_MANIFEST" "$APISERVER_MANIFEST"
+        error "Failed to patch $APISERVER_MANIFEST (expected 2 occurrences of 'encryption-provider-config', got ${PATCH_COUNT})."
+    fi
+    log "Added --encryption-provider-config to kube-apiserver manifest (${PATCH_COUNT} occurrences confirmed)"
 fi
 
 # ── Wait for API server to come back healthy ──────────────────────────────────
@@ -72,12 +65,15 @@ TIMEOUT=300
 ELAPSED=0
 while [[ $ELAPSED -lt $TIMEOUT ]]; do
     if kubectl --context "kind-${KIND_CLUSTER_NAME}" get --raw /healthz >/dev/null 2>&1; then
-        # Double-check it's the new pod (encryption flag present in running args)
-        if docker exec "$CONTAINER" crictl inspect \
-            "$(docker exec "$CONTAINER" crictl ps --name kube-apiserver -q 2>/dev/null | head -1)" \
-            2>/dev/null | grep -q "encryption-provider-config"; then
-            log "kube-apiserver is healthy with KMS encryption enabled (${ELAPSED}s)"
-            break
+        # Double-check it's the new pod (encryption flag present in running args).
+        # crictl inspect returns the full container config including args.
+        NEW_POD_ID=$(docker exec "$CONTAINER" crictl ps --name kube-apiserver -q 2>/dev/null | head -1)
+        if [[ -n "$NEW_POD_ID" ]]; then
+            ARGS=$(docker exec "$CONTAINER" crictl inspect "$NEW_POD_ID" 2>/dev/null || true)
+            if echo "$ARGS" | grep -q 'encryption-provider-config'; then
+                log "kube-apiserver is healthy with KMS encryption enabled (${ELAPSED}s)"
+                break
+            fi
         fi
     fi
     if [[ $ELAPSED -ge $TIMEOUT ]]; then

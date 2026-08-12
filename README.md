@@ -87,6 +87,7 @@ License/vault.hclic
 The file must contain a single-line license string. An example placeholder is at [`License/vault.hclic.example`](License/vault.hclic.example).
 
 ```bash
+mkdir -p License/
 cp /path/to/your/vault.hclic License/vault.hclic
 
 # Verify it is non-empty:
@@ -209,14 +210,14 @@ Your Machine
 └── kind cluster  (vault-kube-kms, k8s v1.33.1)
     └── vault-kube-kms-control-plane  (Docker container)
         ├── /tmp/vault-kube-kms.socket          gRPC KMS v2 Unix socket
-        ├── /tmp/approle-secret-id              mode 0400
+        ├── /opt/kms/approle-secret-id          mode 0400
         ├── /etc/kubernetes/encryption-config.yaml
         │     endpoint: unix:///tmp/vault-kube-kms.socket
         ├── /opt/kms/vault-kube-kms             Linux binary (cross-compiled from source)
         │     --vault-key-path=transit/keys/kms
         │     --vault-address=http://<docker-gateway>:8200
         │     --approle-role-id=lab-kube-kms
-        │     --approle-secret-id-path=/tmp/approle-secret-id
+        │     --approle-secret-id-path=/opt/kms/approle-secret-id
         │     --tls-skip-verify  ← LAB ONLY, not for production
         │     --metrics-port=9090
         │     --health-port=8081

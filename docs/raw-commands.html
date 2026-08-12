@@ -25,6 +25,7 @@
   }
   .header h1 { font-size: 21px; font-weight: 700; margin-bottom: 6px; }
   .header .sub { color: #57606a; font-size: 13px; }
+  .header .author { color: #57606a; font-size: 12px; margin-top: 6px; }
 
   .badge {
     display: inline-block;
@@ -157,6 +158,7 @@
     </div>
     <h1>Vault KMS for Kubernetes — Raw Commands Reference</h1>
     <div class="sub">Every command needed to set up and run the lab, written out verbatim — no Makefile abstraction. Use this alongside <a href="overview.html">overview.html</a> or as a step-by-step audit trail.</div>
+    <div class="author">Author: Abhijeet Lokhande (SA APJ)</div>
   </div>
 
   <!-- ── SECTION 0: Environment variables ───────────────────────────── -->
@@ -274,6 +276,7 @@ SECRET_ID=$(vault write -force -format=json \
   auth/approle/role/kube-kms/secret-id \
   | jq -r '.data.secret_id')
 
+mkdir -p .lab-state
 echo "$SECRET_ID" &gt; .lab-state/approle-secret-id
 chmod 600 .lab-state/approle-secret-id</div>
 
@@ -295,11 +298,6 @@ kind create cluster \
 docker exec "$KIND_NODE" apt-get update -qq
 docker exec "$KIND_NODE" apt-get install -y --no-install-recommends etcd-client</div>
 
-  <div class="step-label">Copy the encryption config into the node</div>
-  <div class="cmd"><span class="cmt"># k8s/encryption-config.yaml references the KMS v2 socket path</span>
-docker cp k8s/encryption-config.yaml \
-  "${KIND_NODE}:/etc/kubernetes/encryption-config.yaml"</div>
-
   <!-- ── SECTION 4: Build and deploy the plugin ─────────────────────── -->
   <div class="section-hdr">
     <div class="num">4</div>
@@ -314,9 +312,9 @@ if [ ! -d /tmp/vault-kube-kms-src ]; then
 fi</div>
 
   <div class="step-label">Cross-compile for Linux amd64 (kind nodes are always Linux amd64)</div>
-  <div class="cmd">CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-  go build -o /tmp/vault-kube-kms \
-  /tmp/vault-kube-kms-src/cmd/vault-kube-kms/</div>
+  <div class="cmd">cd /tmp/vault-kube-kms-src
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+  go build -o .lab-state/vault-kube-kms ./main.go</div>
 
   <div class="info">
     <div class="lbl">Why CGO_ENABLED=0</div>
@@ -324,13 +322,15 @@ fi</div>
   </div>
 
   <div class="step-label">Copy binary and secret-id into the kind node</div>
-  <div class="cmd">docker exec "$KIND_NODE" mkdir -p /opt/kms
+  <div class="cmd"><span class="cmt"># /opt/kms/ is used instead of /tmp because /tmp is a tmpfs inside kind nodes</span>
+<span class="cmt"># and docker cp writes are not visible to running processes there.</span>
+docker exec "$KIND_NODE" mkdir -p /opt/kms
 
-docker cp /tmp/vault-kube-kms "${KIND_NODE}:/opt/kms/vault-kube-kms"
+docker cp .lab-state/vault-kube-kms "${KIND_NODE}:/opt/kms/vault-kube-kms"
 docker exec "$KIND_NODE" chmod +x /opt/kms/vault-kube-kms
 
-docker cp .lab-state/approle-secret-id "${KIND_NODE}:/tmp/approle-secret-id"
-docker exec "$KIND_NODE" chmod 0400 /tmp/approle-secret-id</div>
+docker cp .lab-state/approle-secret-id "${KIND_NODE}:/opt/kms/approle-secret-id"
+docker exec "$KIND_NODE" chmod 0400 /opt/kms/approle-secret-id</div>
 
   <div class="step-label">Start the plugin</div>
   <div class="cmd"><span class="cmt"># Replace &lt;VAULT_HOST&gt; with the actual Docker bridge gateway IP</span>
@@ -339,7 +339,7 @@ docker exec -d "$KIND_NODE" \
     --vault-key-path=transit/keys/kms \
     --vault-address="http://${VAULT_HOST}:8200" \
     --approle-role-id=lab-kube-kms \
-    --approle-secret-id-path=/tmp/approle-secret-id \
+    --approle-secret-id-path=/opt/kms/approle-secret-id \
     --tls-skip-verify \
     --metrics-port=9090 \
     --health-port=8081 \
@@ -367,10 +367,8 @@ docker exec "$KIND_NODE" curl -sf http://127.0.0.1:8081/readyz \
 
   <div class="step-label">Patch the kube-apiserver static pod manifest</div>
   <div class="cmd"><span class="cmt"># The manifest lives at /etc/kubernetes/manifests/kube-apiserver.yaml inside the node</span>
-<span class="cmt"># Add two flags if not already present:</span>
-<span class="cmt">#   --encryption-provider-config=/etc/kubernetes/encryption-config.yaml</span>
-<span class="cmt">#   --encryption-provider-config-automatic-reload=true</span>
-
+<span class="cmt"># Use awk to insert the two flags on the line immediately after '- kube-apiserver'.</span>
+<span class="cmt"># The awk command runs entirely inside the container — no heredoc / stdin passing needed.</span>
 docker exec "$KIND_NODE" bash -c '
   MANIFEST=/etc/kubernetes/manifests/kube-apiserver.yaml
   if ! grep -q encryption-provider-config "$MANIFEST"; then
