@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+log()   { echo "[$(date +%H:%M:%S)] $*"; }
+error() { echo "[ERROR] $*" >&2; exit 1; }
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/scripts/detect-mode.sh"
+
+usage() {
+	cat <<'EOF'
+Usage:
+  ./vault-demo kms-setup      Configure Vault: Transit key + AppRole + policy + audit log
+  ./vault-demo kms-verify     Prove etcd encryption: write secret -> etcdctl dump -> decrypt
+  ./vault-demo kms-rotate     Rotate KEK in Vault, plugin auto-detects, no API server restart
+  ./vault-demo kms-failover   Stop Vault: reads survive (KMS v2 cache), writes fail, recover
+  ./vault-demo kms-telemetry  Show Prometheus /metrics + Vault audit log
+  ./vault-demo all            Run all modules in sequence
+  ./vault-demo status         Show Vault + kind + plugin status
+  ./vault-demo clean          Tear down everything (kind cluster + Vault + lab state)
+
+Optional:
+  --record   Record execution with asciinema
+EOF
+}
+
+run_module() {
+	local module="$1"
+	local module_path="$SCRIPT_DIR/modules/${module}.sh"
+	[[ -x "$module_path" ]] || error "Module not executable or missing: $module_path"
+	if [[ "${RECORD_MODE:-false}" == "true" ]]; then
+		local timestamp; timestamp="$(date +%Y%m%d-%H%M%S)"
+		local cast="$SCRIPT_DIR/recordings/demo-${module}-${timestamp}.cast"
+		mkdir -p "$SCRIPT_DIR/recordings"
+		log "Recording to $cast"
+		asciinema rec "$cast" -c "$module_path"
+	else
+		"$module_path"
+	fi
+}
+
+show_status() {
+	echo ""
+	echo "── Vault ─────────────────────────────────────────────────────────────"
+	vault status 2>/dev/null || echo "  (vault not reachable)"
+	echo ""
+	echo "── kind cluster ─────────────────────────────────────────────────────"
+	kind get clusters 2>/dev/null | grep 'vault-kube-kms' && \
+		kubectl get nodes 2>/dev/null || echo "  (kind cluster not running)"
+	echo ""
+	echo "── vault-kube-kms plugin ────────────────────────────────────────────"
+	CONTAINER="vault-kube-kms-control-plane"
+	if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "$CONTAINER"; then
+		if docker exec "$CONTAINER" test -S /tmp/vault-kube-kms.socket 2>/dev/null; then
+			echo "  Socket: /tmp/vault-kube-kms.socket ✓"
+		else
+			echo "  Socket: not found (plugin not running)"
+		fi
+		READYZ="$(docker exec "$CONTAINER" \
+			curl -sf -o /dev/null -w '%{http_code}' http://127.0.0.1:8081/readyz 2>/dev/null || echo 000)"
+		echo "  /readyz: HTTP $READYZ"
+		PID="$(docker exec "$CONTAINER" pgrep -x vault-kube-kms 2>/dev/null || echo none)"
+		echo "  PID: $PID"
+	else
+		echo "  (kind control-plane container not running)"
+	fi
+	echo ""
+}
+
+do_clean() {
+	log "Tearing down lab environment..."
+	kind delete cluster --name vault-kube-kms 2>/dev/null || true
+	COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+	docker compose -f "$COMPOSE_FILE" -p vault-kms-lab \
+		--profile enterprise down -v --remove-orphans 2>/dev/null || true
+	rm -f "$SCRIPT_DIR/.vault-init.json" "$SCRIPT_DIR/.vault-mode"
+	rm -f "$SCRIPT_DIR/.lab-state/approle-secret-id" \
+	       "$SCRIPT_DIR/.lab-state/approle-role-id" \
+	       "$SCRIPT_DIR/.lab-state/vault-addr"
+	if [[ -d "$SCRIPT_DIR/data" ]]; then
+		find "$SCRIPT_DIR/data" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+	fi
+	log "Environment cleaned."
+}
+
+if [[ "$#" -lt 1 ]]; then usage; exit 1; fi
+
+RECORD_MODE=false
+declare -a commands=()
+for arg in "$@"; do
+	case "$arg" in
+		--record) RECORD_MODE=true ;;
+		*)        commands+=("$arg") ;;
+	esac
+done
+export RECORD_MODE
+
+[[ "${#commands[@]}" -eq 0 ]] && { usage; exit 1; }
+
+primary="${commands[0]}"
+
+case "$primary" in
+	status)
+		show_status; exit 0 ;;
+	clean|enterprise-reset)
+		do_clean; exit 0 ;;
+	all)
+		modules=("kms-setup" "kms-verify" "kms-rotate" "kms-failover" "kms-telemetry") ;;
+	kms-setup|kms-verify|kms-rotate|kms-failover|kms-telemetry)
+		modules=("${commands[@]}") ;;
+	*)
+		error "Unknown command: $primary. Run ./vault-demo for usage." ;;
+esac
+
+log "Running demos in $VAULT_MODE mode"
+
+declare -a summary_names=()
+declare -a summary_statuses=()
+any_failure=0
+
+for module in "${modules[@]}"; do
+	log "Starting module: $module"
+	if run_module "$module"; then
+		summary_names+=("$module")
+		summary_statuses+=("\u2713 PASS")
+	else
+		log "Module failed: $module"
+		summary_names+=("$module")
+		summary_statuses+=("\u2717 FAIL")
+		any_failure=1
+	fi
+done
+
+echo ""
+echo "┌──────────────────┬────────┐"
+echo "│ Module           │ Status │"
+echo "├──────────────────┼────────┤"
+for i in "${!summary_names[@]}"; do
+	printf "│ %-16s │ %-6s │\n" "${summary_names[$i]}" "${summary_statuses[$i]}"
+done
+echo "└──────────────────┴────────┘"
+
+[[ "$any_failure" -ne 0 ]] && exit 1
+exit 0
