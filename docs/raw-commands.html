@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vault KMS for Kubernetes — Raw Commands Reference</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
+    color: #1f2328;
+    background: #ffffff;
+    padding: 32px 20px 60px;
+  }
+
+  .page { max-width: 760px; margin: 0 auto; }
+
+  .header {
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 20px;
+    margin-bottom: 28px;
+  }
+  .header h1 { font-size: 21px; font-weight: 700; margin-bottom: 6px; }
+  .header .sub { color: #57606a; font-size: 13px; }
+
+  .badge {
+    display: inline-block;
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #57606a;
+    margin-right: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .section-hdr {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 32px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .section-hdr .num {
+    background: #1f2328;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-hdr h2 { font-size: 16px; font-weight: 700; }
+
+  .step-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #57606a;
+    margin: 18px 0 6px;
+  }
+
+  .cmd {
+    background: #161b22;
+    border-radius: 6px;
+    padding: 13px 15px;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 12px;
+    color: #e6edf3;
+    margin-bottom: 10px;
+    white-space: pre;
+    overflow-x: auto;
+    line-height: 1.7;
+  }
+  .cmd .cmt  { color: #8b949e; }
+  .cmd .flag { color: #79c0ff; }
+  .cmd .val  { color: #a5d6ff; }
+  .cmd .kw   { color: #ff7b72; }
+
+  .note {
+    background: #fffbeb;
+    border-left: 3px solid #d97706;
+    padding: 9px 13px;
+    font-size: 13px;
+    border-radius: 0 5px 5px 0;
+    margin-bottom: 12px;
+    color: #1f2328;
+  }
+
+  .info {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 9px 13px;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .info .lbl {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #1d4ed8;
+    margin-bottom: 3px;
+  }
+
+  p { margin-bottom: 10px; font-size: 13px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  th {
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    padding: 7px 10px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #57606a;
+  }
+  td { border: 1px solid #e5e7eb; padding: 7px 10px; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7f8fa; }
+  code { font-family: "SF Mono","Fira Code","Consolas",monospace; font-size: 11px; background:#f7f8fa; border:1px solid #e5e7eb; border-radius:3px; padding:1px 5px; }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 14px;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+    font-size: 12px;
+    color: #57606a;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div style="margin-bottom:8px">
+      <span class="badge">Raw Commands</span>
+      <span class="badge">Vault Enterprise</span>
+      <span class="badge">KMS v2</span>
+    </div>
+    <h1>Vault KMS for Kubernetes — Raw Commands Reference</h1>
+    <div class="sub">Every command needed to set up and run the lab, written out verbatim — no Makefile abstraction. Use this alongside <a href="overview.html">overview.html</a> or as a step-by-step audit trail.</div>
+  </div>
+
+  <!-- ── SECTION 0: Environment variables ───────────────────────────── -->
+  <div class="section-hdr">
+    <div class="num" style="background:#57606a">E</div>
+    <h2>Environment &amp; Shared Variables</h2>
+  </div>
+
+  <p>All commands below assume these variables are set in your shell. Export them once at the start of a session.</p>
+
+  <div class="cmd"><span class="cmt"># Vault address — Vault runs on your machine via Docker Compose</span>
+export VAULT_ADDR="http://127.0.0.1:8200"
+
+<span class="cmt"># Set after vault operator init (see Section 1)</span>
+export VAULT_TOKEN="&lt;root-token&gt;"
+
+<span class="cmt"># Kind container name — used for docker exec commands</span>
+export KIND_NODE="vault-kube-kms-control-plane"
+
+<span class="cmt"># Docker bridge gateway — how the kind node reaches Vault on your machine</span>
+<span class="cmt"># Detect it automatically:</span>
+VAULT_HOST=$(docker network inspect bridge \
+  --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}' 2>/dev/null \
+  || echo "172.17.0.1")
+export VAULT_HOST</div>
+
+  <!-- ── SECTION 1: Start Vault ──────────────────────────────────────── -->
+  <div class="section-hdr">
+    <div class="num">1</div>
+    <h2>Start Vault Enterprise</h2>
+  </div>
+
+  <div class="step-label">Start the container</div>
+  <div class="cmd"><span class="cmt"># From the repo root</span>
+VAULT_LICENSE=$(cat License/vault.hclic) \
+  docker compose --profile enterprise up -d
+
+<span class="cmt"># Wait until Vault is reachable</span>
+until vault status &gt;/dev/null 2&gt;&amp;1; do sleep 1; done</div>
+
+  <div class="step-label">Initialize (first time only)</div>
+  <div class="cmd"><span class="cmt"># 5 key shares, threshold 3 — saves keys to .vault-init.json</span>
+vault operator init -key-shares=5 -key-threshold=3 \
+  -format=json &gt; .vault-init.json
+
+<span class="cmt"># Extract the root token</span>
+export VAULT_TOKEN=$(jq -r '.root_token' .vault-init.json)</div>
+
+  <div class="step-label">Unseal (3 keys required)</div>
+  <div class="cmd">jq -r '.unseal_keys_b64[0]' .vault-init.json | xargs vault operator unseal
+jq -r '.unseal_keys_b64[1]' .vault-init.json | xargs vault operator unseal
+jq -r '.unseal_keys_b64[2]' .vault-init.json | xargs vault operator unseal
+
+<span class="cmt"># Confirm sealed=false and ha_enabled=false</span>
+vault status</div>
+
+  <!-- ── SECTION 2: Configure Vault ─────────────────────────────────── -->
+  <div class="section-hdr">
+    <div class="num">2</div>
+    <h2>Configure Vault — Transit, Policy, AppRole</h2>
+  </div>
+
+  <div class="step-label">Enable secrets and auth engines</div>
+  <div class="cmd"><span class="cmt"># Transit secrets engine at default path transit/</span>
+vault secrets enable transit
+
+<span class="cmt"># AppRole auth method</span>
+vault auth enable approle
+
+<span class="cmt"># File audit log inside the container (volume-mounted to ./data/)</span>
+vault audit enable file file_path=/vault/logs/audit.log</div>
+
+  <div class="step-label">Create the Key Encryption Key (KEK)</div>
+  <div class="cmd"><span class="cmt"># AES-256-GCM96 is the default and the right choice for envelope encryption</span>
+vault write -f transit/keys/kms
+
+<span class="cmt"># Confirm it exists</span>
+vault read transit/keys/kms</div>
+
+  <div class="step-label">Write the KMS policy</div>
+  <div class="cmd"><span class="cmt"># encrypt and decrypt both require ["update","create"] — ["update"] alone causes silent failures</span>
+vault policy write transit-encrypt-decrypt - &lt;&lt;'EOF'
+path "transit/encrypt/kms" {
+  capabilities = ["update", "create"]
+}
+path "transit/decrypt/kms" {
+  capabilities = ["update", "create"]
+}
+path "transit/keys/kms" {
+  capabilities = ["read"]
+}
+path "sys/license/status" {
+  capabilities = ["read"]
+}
+EOF</div>
+
+  <div class="step-label">Create the AppRole</div>
+  <div class="cmd"><span class="cmt"># Create the role</span>
+vault write auth/approle/role/kube-kms \
+  role_name="kube-kms" \
+  token_policies="transit-encrypt-decrypt" \
+  token_ttl=1h \
+  token_max_ttl=4h \
+  secret_id_num_uses=0
+
+<span class="cmt"># Read the fixed role-id</span>
+vault read auth/approle/role/kube-kms/role-id
+
+<span class="cmt"># Generate a secret-id (save this — it is needed by the plugin)</span>
+vault write -f auth/approle/role/kube-kms/secret-id</div>
+
+  <div class="step-label">Save the secret-id for use in the kind node</div>
+  <div class="cmd"><span class="cmt"># Store to a local file so deploy-kms-binary.sh can copy it in</span>
+SECRET_ID=$(vault write -force -format=json \
+  auth/approle/role/kube-kms/secret-id \
+  | jq -r '.data.secret_id')
+
+echo "$SECRET_ID" &gt; .lab-state/approle-secret-id
+chmod 600 .lab-state/approle-secret-id</div>
+
+  <!-- ── SECTION 3: Kind cluster ─────────────────────────────────────── -->
+  <div class="section-hdr">
+    <div class="num">3</div>
+    <h2>Create the Kind Cluster</h2>
+  </div>
+
+  <div class="step-label">Create cluster with encryption-config volume mount</div>
+  <div class="cmd"><span class="cmt"># k8s/kind-config.yaml mounts /etc/kubernetes/encryption-config.yaml into the node</span>
+kind create cluster \
+  --name vault-kube-kms \
+  --config k8s/kind-config.yaml \
+  --image kindest/node:v1.33.1</div>
+
+  <div class="step-label">Install etcdctl inside the kind node</div>
+  <div class="cmd"><span class="cmt"># etcdctl is NOT installed on your host — only inside the kind container</span>
+docker exec "$KIND_NODE" apt-get update -qq
+docker exec "$KIND_NODE" apt-get install -y --no-install-recommends etcd-client</div>
+
+  <div class="step-label">Copy the encryption config into the node</div>
+  <div class="cmd"><span class="cmt"># k8s/encryption-config.yaml references the KMS v2 socket path</span>
+docker cp k8s/encryption-config.yaml \
+  "${KIND_NODE}:/etc/kubernetes/encryption-config.yaml"</div>
+
+  <!-- ── SECTION 4: Build and deploy the plugin ─────────────────────── -->
+  <div class="section-hdr">
+    <div class="num">4</div>
+    <h2>Build and Deploy the vault-kube-kms Plugin</h2>
+  </div>
+
+  <div class="step-label">Clone the upstream source</div>
+  <div class="cmd"><span class="cmt"># Skip if the directory already exists (e.g. from a zip archive)</span>
+if [ ! -d /tmp/vault-kube-kms-src ]; then
+  git clone https://github.com/hashicorp/vault-kube-kms \
+    /tmp/vault-kube-kms-src
+fi</div>
+
+  <div class="step-label">Cross-compile for Linux amd64 (kind nodes are always Linux amd64)</div>
+  <div class="cmd">CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+  go build -o /tmp/vault-kube-kms \
+  /tmp/vault-kube-kms-src/cmd/vault-kube-kms/</div>
+
+  <div class="info">
+    <div class="lbl">Why CGO_ENABLED=0</div>
+    The binary runs inside the kind node (a Docker container). CGO produces glibc-linked binaries that may not match the container's libc version. A fully static binary has no runtime dependencies.
+  </div>
+
+  <div class="step-label">Copy binary and secret-id into the kind node</div>
+  <div class="cmd">docker exec "$KIND_NODE" mkdir -p /opt/kms
+
+docker cp /tmp/vault-kube-kms "${KIND_NODE}:/opt/kms/vault-kube-kms"
+docker exec "$KIND_NODE" chmod +x /opt/kms/vault-kube-kms
+
+docker cp .lab-state/approle-secret-id "${KIND_NODE}:/tmp/approle-secret-id"
+docker exec "$KIND_NODE" chmod 0400 /tmp/approle-secret-id</div>
+
+  <div class="step-label">Start the plugin</div>
+  <div class="cmd"><span class="cmt"># Replace &lt;VAULT_HOST&gt; with the actual Docker bridge gateway IP</span>
+docker exec -d "$KIND_NODE" \
+  /opt/kms/vault-kube-kms \
+    --vault-key-path=transit/keys/kms \
+    --vault-address="http://${VAULT_HOST}:8200" \
+    --approle-role-id=lab-kube-kms \
+    --approle-secret-id-path=/tmp/approle-secret-id \
+    --tls-skip-verify \
+    --metrics-port=9090 \
+    --health-port=8081 \
+  &gt;&gt; /var/log/kms.log 2&gt;&amp;1</div>
+
+  <div class="step-label">Wait for the Unix socket to appear</div>
+  <div class="cmd"><span class="cmt"># The socket must exist before the API server is patched</span>
+for i in $(seq 1 30); do
+  docker exec "$KIND_NODE" \
+    test -S /tmp/vault-kube-kms.socket 2&gt;/dev/null &amp;&amp; echo "Socket ready" &amp;&amp; break
+  sleep 2
+done</div>
+
+  <div class="step-label">Check /readyz</div>
+  <div class="cmd"><span class="cmt"># Plugin health — must return 200 before proceeding</span>
+docker exec "$KIND_NODE" curl -sf http://127.0.0.1:8081/readyz \
+  &amp;&amp; echo "Plugin ready" \
+  || echo "Plugin not ready"</div>
+
+  <!-- ── SECTION 5: Enable encryption ───────────────────────────────── -->
+  <div class="section-hdr">
+    <div class="num">5</div>
+    <h2>Enable Encryption on the API Server</h2>
+  </div>
+
+  <div class="step-label">Patch the kube-apiserver static pod manifest</div>
+  <div class="cmd"><span class="cmt"># The manifest lives at /etc/kubernetes/manifests/kube-apiserver.yaml inside the node</span>
+<span class="cmt"># Add two flags if not already present:</span>
+<span class="cmt">#   --encryption-provider-config=/etc/kubernetes/encryption-config.yaml</span>
+<span class="cmt">#   --encryption-provider-config-automatic-reload=true</span>
+
+docker exec "$KIND_NODE" bash -c '
+  MANIFEST=/etc/kubernetes/manifests/kube-apiserver.yaml
+  if ! grep -q encryption-provider-config "$MANIFEST"; then
+    awk "/- kube-apiserver/{print; print \"    - --encryption-provider-config=/etc/kubernetes/encryption-config.yaml\"; print \"    - --encryption-provider-config-automatic-reload=true\"; next}1" \
+      "$MANIFEST" > /tmp/apiserver-patched.yaml
+    mv /tmp/apiserver-patched.yaml "$MANIFEST"
+    echo "Manifest patched"
+  else
+    echo "Already patched — skipping"
+  fi
+'</div>
+
+  <div class="step-label">Wait for the API server to restart (up to 5 minutes)</div>
+  <div class="cmd"><span class="cmt"># kubelet detects the manifest change and restarts the API server static pod</span>
+echo "Waiting for API server restart..."
+sleep 10
+for i in $(seq 1 60); do
+  kubectl cluster-info &gt;/dev/null 2&gt;&amp;1 &amp;&amp; echo "API server ready" &amp;&amp; break
+  echo "  attempt $i/60..."
+  sleep 5
+done</div>
+
+  <!-- ── SECTION 6: Verify ───────────────────────────────────────────── -->
+  <div class="section-hdr">
+    <div class="num">6</div>
+    <h2>Verify Encryption (kms-verify)</h2>
+  </div>
+
+  <div class="step-label">Write a test secret via the Kubernetes API</div>
+  <div class="cmd">kubectl create secret generic lab-secret \
+  --from-literal=password=supersecretvalue \
+  --namespace default</div>
+
+  <div class="step-label">Read the raw etcd bytes — must show ciphertext</div>
+  <div class="cmd">ETCD_CERTS_DIR="/etc/kubernetes/pki/etcd"
+
+docker exec "$KIND_NODE" bash -c "
+  ETCDCTL_API=3 etcdctl \
+    --endpoints=https://127.0.0.1:2379 \
+    --cacert=${ETCD_CERTS_DIR}/ca.crt \
+    --cert=${ETCD_CERTS_DIR}/server.crt \
+    --key=${ETCD_CERTS_DIR}/server.key \
+    get /registry/secrets/default/lab-secret
+"</div>
+
+  <div class="note">Expected output begins with <code>k8s:enc:kms:v2:vault-kube-kms:</code>. The plaintext value <code>supersecretvalue</code> must NOT appear.</div>
+
+  <div class="step-label">Confirm the plaintext is absent from etcd</div>
+  <div class="cmd">docker exec "$KIND_NODE" bash -c "
+  ETCDCTL_API=3 etcdctl \
+    --endpoints=https://127.0.0.1:2379 \
+    --cacert=${ETCD_CERTS_DIR}/ca.crt \
+    --cert=${ETCD_CERTS_DIR}/server.crt \
+    --key=${ETCD_CERTS_DIR}/server.key \
+    get /registry/secrets/default/lab-secret \
+  | grep -c 'supersecretvalue'
+" || echo "PASS: plaintext not found in etcd"</div>
+
+  <div class="step-label">Read back via Kubernetes API (decrypted by Vault)</div>
+  <div class="cmd">kubectl get secret lab-secret \
+  --namespace default \
+  -o jsonpath='{.data.password}' \
+  | base64 -d &amp;&amp; echo</div>
+
+  <!-- ── SECTION 7: Key rotation ─────────────────────────────────────── -->
+  <div class="section-hdr">
+    <div class="num">7</div>
+    <h2>Zero-Downtime Key Rotation (kms-rotate)</h2>
+  </div>
+
+  <div class="step-label">Rotate the Transit KEK — one command</div>
+  <div class="cmd"><span class="cmt"># Vault creates a new key version; the plugin picks it up via the KMS v2 Status RPC</span>
+vault write -f transit/keys/kms/rotate
+
+<span class="cmt"># Confirm the new version is active</span>
+vault read transit/keys/kms | grep -E 'latest_version|min_decryption'</div>
+
+  <div class="step-label">Re-encrypt all existing secrets with the new key</div>
+  <div class="cmd"><span class="cmt"># Forces every secret through a write cycle so etcd entries use the new KEK version</span>
+kubectl get secrets --all-namespaces -o json \
+  | kubectl replace -f -</div>
+
+  <div class="step-label">Verify the new ciphertext uses the updated key version</div>
+  <div class="cmd"><span class="cmt"># Read the key — min_decryption_version should still be 1 (old data still readable)</span>
+vault read transit/keys/kms
+
+<span class="cmt"># Write a new secret and read it back — should succeed with the new key</span>
+kubectl create secret generic lab-post-rotate \
+  --from-literal=value=after-rotation
+kubectl get secret lab-post-rotate \
+  -o jsonpath='{.data.value}' | base64 -d &amp;&amp; echo</div>
+
+  <!-- ── SECTION 8: Failover ─────────────────────────────────────────── -->
+  <div class="section-hdr">
+    <div class="num">8</div>
+    <h2>Resilience Under Vault Outage (kms-failover)</h2>
+  </div>
+
+  <div class="step-label">Stop Vault</div>
+  <div class="cmd">docker compose --profile enterprise stop</div>
+
+  <div class="step-label">Try to read an existing secret (should succeed via DEK-seed cache)</div>
+  <div class="cmd">kubectl get secret lab-secret \
+  --namespace default \
+  -o jsonpath='{.data.password}' \
+  | base64 -d &amp;&amp; echo
+<span class="cmt"># Expected: supersecretvalue — the API server uses its in-memory DEK cache</span></div>
+
+  <div class="step-label">Try to write a new secret (should fail — Vault unreachable)</div>
+  <div class="cmd">kubectl create secret generic lab-during-outage \
+  --from-literal=value=should-fail
+<span class="cmt"># Expected: error — the API server cannot encrypt a new DEK seed without Vault</span>
+<span class="cmt"># The 3-second KMS v2 timeout fires, and the write is rejected</span></div>
+
+  <div class="step-label">Restart Vault and unseal</div>
+  <div class="cmd">docker compose --profile enterprise start
+
+<span class="cmt"># Wait for Vault to be ready</span>
+until vault status &gt;/dev/null 2&gt;&amp;1; do sleep 1; done
+
+<span class="cmt"># Unseal (always required after restart — Vault seals on shutdown)</span>
+jq -r '.unseal_keys_b64[0]' .vault-init.json | xargs vault operator unseal
+jq -r '.unseal_keys_b64[1]' .vault-init.json | xargs vault operator unseal
+jq -r '.unseal_keys_b64[2]' .vault-init.json | xargs vault operator unseal
+
+vault status | grep -E 'Sealed|HA'</div>
+
+  <div class="step-label">Confirm writes succeed again</div>
+  <div class="cmd">kubectl create secret generic lab-post-recovery \
+  --from-literal=value=back-online
+kubectl get secret lab-post-recovery \
+  -o jsonpath='{.data.value}' | base64 -d &amp;&amp; echo</div>
+
+  <!-- ── SECTION 9: Telemetry ────────────────────────────────────────── -->
+  <div class="section-hdr">
+    <div class="num">9</div>
+    <h2>Observability — Metrics and Audit Log (kms-telemetry)</h2>
+  </div>
+
+  <div class="step-label">Read the Vault audit log</div>
+  <div class="cmd"><span class="cmt"># The audit log is volume-mounted from the container to ./data/logs/audit.log</span>
+tail -20 data/logs/audit.log | jq '
+  { time: .time,
+    type: .type,
+    path: .request.path,
+    op:   .request.operation }'</div>
+
+  <div class="step-label">Scrape the plugin Prometheus metrics</div>
+  <div class="cmd"><span class="cmt"># Port 9090 inside the kind node — curl from within the container</span>
+docker exec "$KIND_NODE" curl -sf http://127.0.0.1:9090/metrics \
+  | grep -E 'rpc_server_duration|rpc_server_requests'</div>
+
+  <div class="step-label">Check plugin health endpoints</div>
+  <div class="cmd"><span class="cmt"># /healthz — liveness</span>
+docker exec "$KIND_NODE" curl -sI http://127.0.0.1:8081/healthz
+
+<span class="cmt"># /readyz — readiness (non-200 means new writes will fail)</span>
+docker exec "$KIND_NODE" curl -sI http://127.0.0.1:8081/readyz</div>
+
+  <div class="step-label">Tail the plugin log</div>
+  <div class="cmd">docker exec "$KIND_NODE" tail -30 /var/log/kms.log</div>
+
+  <!-- ── SECTION 10: Cleanup ─────────────────────────────────────────── -->
+  <div class="section-hdr">
+    <div class="num" style="background:#57606a">✕</div>
+    <h2>Teardown</h2>
+  </div>
+
+  <div class="step-label">Delete the kind cluster</div>
+  <div class="cmd">kind delete cluster --name vault-kube-kms</div>
+
+  <div class="step-label">Stop and remove Vault</div>
+  <div class="cmd">docker compose --profile enterprise down -v</div>
+
+  <div class="step-label">Remove generated lab state</div>
+  <div class="cmd">rm -rf .lab-state .vault-init.json data/</div>
+
+  <div class="info">
+    <div class="lbl">Note</div>
+    <code>License/vault.hclic</code> is not removed by teardown — it is gitignored and user-managed. Re-run <code>make bootstrap</code> (or the commands in Sections 1–5) to start fresh.
+  </div>
+
+  <footer>
+    Made with IBM Bob
+  </footer>
+
+</div>
+</body>
+</html>
