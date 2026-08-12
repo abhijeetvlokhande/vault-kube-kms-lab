@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vault KMS for Kubernetes — Lab Overview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
+    color: #1f2328;
+    background: #ffffff;
+    padding: 32px 20px 60px;
+  }
+
+  .page { max-width: 760px; margin: 0 auto; }
+
+  .header {
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 20px;
+    margin-bottom: 28px;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .header .sub { color: #57606a; font-size: 13px; }
+
+  .badge {
+    display: inline-block;
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #57606a;
+    margin-right: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 28px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  p { font-size: 13px; margin-bottom: 12px; }
+
+  /* Scenario cards */
+  .scenarios { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+  .scenario {
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 26px 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .scenario .num {
+    background: #1f2328;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .scenario .body .title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .scenario .body .desc  { font-size: 13px; color: #57606a; margin-bottom: 6px; }
+  .scenario .body .outcome {
+    font-size: 12px;
+    color: #1f2328;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    display: inline-block;
+  }
+  .scenario .cmd-box {
+    background: #161b22;
+    border-radius: 5px;
+    padding: 7px 11px;
+    font-family: "SF Mono","Fira Code","Consolas",monospace;
+    font-size: 11px;
+    color: #e6edf3;
+    white-space: nowrap;
+    align-self: center;
+  }
+
+  /* Setup steps */
+  .steps { display: flex; flex-direction: column; gap: 0; margin-bottom: 24px; }
+  .step-row {
+    display: flex;
+    gap: 14px;
+    position: relative;
+    padding-bottom: 6px;
+  }
+  .step-row::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 28px;
+    bottom: 0;
+    width: 1px;
+    background: #e5e7eb;
+  }
+  .step-row:last-child::before { display: none; }
+  .step-row .dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid #1f2328;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 3px;
+    z-index: 1;
+  }
+  .step-row .content { padding-bottom: 18px; }
+  .step-row .content .sh {
+    font-family: "SF Mono","Fira Code","Consolas",monospace;
+    font-size: 11px;
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 3px 8px;
+    display: inline-block;
+    margin-top: 3px;
+    color: #1f2328;
+  }
+  .step-row .content .desc { font-size: 13px; color: #57606a; margin-top: 2px; }
+
+  /* Architecture diagram */
+  .arch-wrap {
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+  }
+  .arch-wrap svg { display: block; margin: 0 auto; }
+
+  /* Links */
+  a { color: #3b82d4; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  th {
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    padding: 7px 10px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #57606a;
+  }
+  td { border: 1px solid #e5e7eb; padding: 7px 10px; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7f8fa; }
+  code { font-family: "SF Mono","Fira Code","Consolas",monospace; font-size: 11px; background:#f7f8fa; border:1px solid #e5e7eb; border-radius:3px; padding:1px 5px; }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 14px;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+    font-size: 12px;
+    color: #57606a;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div style="margin-bottom:8px">
+      <span class="badge">Vault Enterprise</span>
+      <span class="badge">KMS v2</span>
+      <span class="badge">kind</span>
+    </div>
+    <h1>Vault KMS for Kubernetes — Lab Overview</h1>
+    <div class="sub">What this lab does, how to set it up, and what each scenario demonstrates.</div>
+  </div>
+
+  <h2>What it is</h2>
+  <p>
+    This lab shows <strong>Vault Enterprise as a Kubernetes KMS v2 provider</strong>. When configured, every Kubernetes secret is encrypted before it reaches etcd. The key that encrypts each secret's data encryption key (DEK) never leaves Vault — it lives in the Transit secrets engine. An etcd backup, a stolen disk, or cloud-managed snapshot yields ciphertext only. Reading a secret always goes through the Kubernetes API server, which calls the Vault plugin to decrypt on every read.
+  </p>
+  <p>
+    The lab uses <strong>kind</strong> (Kubernetes in Docker) with a single control-plane node, and Vault Enterprise running via Docker Compose on your machine.
+  </p>
+
+  <h2>Architecture</h2>
+
+  <div class="arch-wrap">
+    <svg viewBox="0 0 700 230" width="700" height="230" xmlns="http://www.w3.org/2000/svg"
+         font-family="-apple-system,Segoe UI,system-ui,sans-serif" font-size="12">
+
+      <!-- kubectl -->
+      <rect x="10" y="10" width="130" height="40" rx="6" fill="#f7f8fa" stroke="#e5e7eb" stroke-width="1.5"/>
+      <text x="75" y="26" text-anchor="middle" font-weight="700" fill="#1f2328">kubectl</text>
+      <text x="75" y="42" text-anchor="middle" fill="#57606a">write / read secret</text>
+
+      <!-- arrow kubectl → apiserver -->
+      <line x1="140" y1="30" x2="200" y2="30" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr)"/>
+      <text x="170" y="25" text-anchor="middle" fill="#57606a" font-size="10">HTTPS</text>
+
+      <!-- kube-apiserver -->
+      <rect x="200" y="10" width="150" height="40" rx="6" fill="#fff" stroke="#1f2328" stroke-width="2"/>
+      <text x="275" y="26" text-anchor="middle" font-weight="700" fill="#1f2328">kube-apiserver</text>
+      <text x="275" y="42" text-anchor="middle" fill="#57606a">encryption-provider-config</text>
+
+      <!-- arrow apiserver → plugin -->
+      <line x1="350" y1="30" x2="420" y2="30" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr)"/>
+      <text x="385" y="22" text-anchor="middle" fill="#57606a" font-size="10">gRPC / Unix</text>
+      <text x="385" y="33" text-anchor="middle" fill="#57606a" font-size="10">KMS v2</text>
+
+      <!-- vault-kube-kms plugin -->
+      <rect x="420" y="10" width="155" height="40" rx="6" fill="#f7f8fa" stroke="#e5e7eb" stroke-width="1.5"/>
+      <text x="497" y="26" text-anchor="middle" font-weight="700" fill="#1f2328">vault-kube-kms</text>
+      <text x="497" y="42" text-anchor="middle" fill="#57606a">plugin (Linux binary)</text>
+
+      <!-- arrow plugin → vault -->
+      <line x1="497" y1="50" x2="497" y2="90" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr)"/>
+      <text x="530" y="76" fill="#57606a" font-size="10">Vault API</text>
+
+      <!-- Vault Enterprise box -->
+      <rect x="380" y="90" width="240" height="55" rx="6" fill="#fff" stroke="#3b82d4" stroke-width="2"/>
+      <text x="500" y="109" text-anchor="middle" font-weight="700" fill="#3b82d4">Vault Enterprise</text>
+      <text x="500" y="126" text-anchor="middle" fill="#57606a">Transit engine · transit/keys/kms</text>
+      <text x="500" y="140" text-anchor="middle" fill="#57606a">KEK (AES-256-GCM96)</text>
+
+      <!-- arrow apiserver → etcd -->
+      <line x1="275" y1="50" x2="275" y2="165" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr)"/>
+      <text x="248" y="115" fill="#57606a" font-size="10">wrapped</text>
+      <text x="248" y="126" fill="#57606a" font-size="10">DEK only</text>
+
+      <!-- etcd -->
+      <rect x="170" y="165" width="210" height="42" rx="6" fill="#f7f8fa" stroke="#e5e7eb" stroke-width="1.5"/>
+      <text x="275" y="183" text-anchor="middle" font-weight="700" fill="#1f2328">etcd</text>
+      <text x="275" y="199" text-anchor="middle" fill="#57606a" font-size="11">k8s:enc:kms:v2:vault-kube-kms:…</text>
+
+      <!-- arrowhead marker -->
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 Z" fill="#e5e7eb"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+
+  <h2>Setup — one command</h2>
+
+  <div class="steps">
+    <div class="step-row">
+      <div class="dot">1</div>
+      <div class="content">
+        <strong>Install dependencies</strong>
+        <div class="sh">bash scripts/install-dependencies.sh</div>
+        <div class="desc">kind, kubectl, go, vault CLI, jq — via Homebrew or apt/dnf.</div>
+      </div>
+    </div>
+    <div class="step-row">
+      <div class="dot">2</div>
+      <div class="content">
+        <strong>Add your license</strong>
+        <div class="sh">cp /path/to/vault.hclic License/vault.hclic</div>
+        <div class="desc">Vault Enterprise license — gitignored, never committed.</div>
+      </div>
+    </div>
+    <div class="step-row">
+      <div class="dot">3</div>
+      <div class="content">
+        <strong>Bootstrap the full environment</strong>
+        <div class="sh">make bootstrap</div>
+        <div class="desc">Starts Vault, configures Transit, creates the kind cluster, builds and deploys the plugin, enables encryption on the API server. ~5–10 min on first run.</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>The five scenarios</h2>
+
+  <div class="scenarios">
+
+    <div class="scenario">
+      <div class="num">1</div>
+      <div class="body">
+        <div class="title">Encryption proof</div>
+        <div class="desc">Write a secret via kubectl, then read the raw bytes from etcd using etcdctl. Shows the KMS v2 ciphertext prefix and the complete absence of plaintext in etcd storage.</div>
+        <span class="outcome">etcd shows k8s:enc:kms:v2:vault-kube-kms:… — plaintext absent</span>
+      </div>
+      <div class="cmd-box">./vault-demo kms-verify</div>
+    </div>
+
+    <div class="scenario">
+      <div class="num">2</div>
+      <div class="body">
+        <div class="title">Key rotation</div>
+        <div class="desc">Rotate the Vault Transit KEK with one API call. The plugin detects the new key version via the KMS v2 Status RPC. Re-encrypt all existing secrets. No API server restart, no application changes.</div>
+        <span class="outcome">New key version active — old version retained for decrypt</span>
+      </div>
+      <div class="cmd-box">./vault-demo kms-rotate</div>
+    </div>
+
+    <div class="scenario">
+      <div class="num">3</div>
+      <div class="body">
+        <div class="title">Vault outage resilience</div>
+        <div class="desc">Stop Vault. Show that existing secrets remain readable (KMS v2 DEK-seed caching in the API server). Show that new writes fail with a 3-second timeout. Restart Vault, unseal, confirm writes succeed again.</div>
+        <span class="outcome">Reads survive outage · writes fail · recovery is automatic</span>
+      </div>
+      <div class="cmd-box">./vault-demo kms-failover</div>
+    </div>
+
+    <div class="scenario">
+      <div class="num">4</div>
+      <div class="body">
+        <div class="title">Observability</div>
+        <div class="desc">Inspect the Vault audit log for encrypt/decrypt entries. Scrape the plugin's Prometheus metrics endpoint (rpc_server_duration_milliseconds). Check /healthz and /readyz.</div>
+        <span class="outcome">Every key operation logged in Vault audit · latency visible in metrics</span>
+      </div>
+      <div class="cmd-box">./vault-demo kms-telemetry</div>
+    </div>
+
+    <div class="scenario">
+      <div class="num">5</div>
+      <div class="body">
+        <div class="title">All scenarios in sequence</div>
+        <div class="desc">Runs kms-setup → kms-verify → kms-rotate → kms-failover → kms-telemetry in order. Use for a full end-to-end walkthrough from a clean bootstrap.</div>
+        <span class="outcome">Complete end-to-end demonstration</span>
+      </div>
+      <div class="cmd-box">./vault-demo all</div>
+    </div>
+
+  </div>
+
+  <h2>Quick command reference</h2>
+
+  <table>
+    <thead>
+      <tr><th>Command</th><th>What it does</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>make bootstrap</code></td><td>Full one-shot startup (Vault + kind + binary + plugin + encryption)</td></tr>
+      <tr><td><code>make enterprise</code></td><td>Start Vault Enterprise via Docker Compose</td></tr>
+      <tr><td><code>make setup-k8s</code></td><td>Create kind cluster, detect Docker bridge gateway, install etcdctl</td></tr>
+      <tr><td><code>make build-kms-binary</code></td><td>Clone vault-kube-kms source, cross-compile Linux amd64 binary</td></tr>
+      <tr><td><code>make deploy-kms</code></td><td>Copy binary into kind node, start plugin, wait for /readyz</td></tr>
+      <tr><td><code>make enable-encryption</code></td><td>Patch kube-apiserver manifest, wait for API server restart</td></tr>
+      <tr><td><code>make verify-assumptions</code></td><td>Run four checks against the compiled binary</td></tr>
+      <tr><td><code>make logs</code></td><td>Tail the vault-kube-kms plugin log</td></tr>
+      <tr><td><code>make status</code></td><td>Vault + kind + plugin status summary</td></tr>
+      <tr><td><code>make clean</code></td><td>Tear down everything (kind + Vault + lab state)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Further reading</h2>
+  <p>
+    <a href="https://developer.hashicorp.com/vault/docs/deploy/kubernetes/kms">Vault KMS for Kubernetes — HashiCorp Developer docs</a><br>
+    <a href="https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/">Kubernetes Encryption at Rest</a><br>
+    <a href="https://developer.hashicorp.com/vault/docs/secrets/transit">Vault Transit Secrets Engine</a><br>
+    <a href="talk-track.html">Talk Track</a> — structured walkthrough with talking points and Q&amp;A<br>
+    <a href="raw-commands.html">Raw Commands Reference</a> — every command verbatim, no Makefile abstraction
+  </p>
+
+  <footer>
+    Made with IBM Bob
+  </footer>
+
+</div>
+</body>
+</html>
