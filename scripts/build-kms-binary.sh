@@ -51,7 +51,10 @@ if kind get clusters 2>/dev/null | grep -q "^${KIND_CLUSTER_NAME}$"; then
 	docker exec "$CONTAINER" mkdir -p /opt/kms
 	docker cp "$OUTPUT" "${CONTAINER}:/opt/kms/vault-kube-kms-smoketest"
 	docker exec "$CONTAINER" chmod +x /opt/kms/vault-kube-kms-smoketest
-	if ! docker exec "$CONTAINER" /opt/kms/vault-kube-kms-smoketest --help 2>&1 | grep -q 'vault-key-path'; then
+	# Capture --help into a variable first — docker exec exits non-zero for --help
+	# (exit 2), which breaks the pipe under set -euo pipefail.
+	HELP_OUT=$(docker exec "$CONTAINER" /opt/kms/vault-kube-kms-smoketest --help 2>&1 || true)
+	if ! echo "$HELP_OUT" | grep -q 'vault-key-path'; then
 		error "Smoke-test FAILED: --vault-key-path not found in binary --help.
 This indicates a build or version mismatch. Check the upstream repo."
 	fi
