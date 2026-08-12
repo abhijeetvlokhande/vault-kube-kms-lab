@@ -320,6 +320,18 @@ Tested with: **1.32, 1.33, 1.34, 1.35, 1.36**. This lab pins to `kindest/node:v1
 
 ---
 
+## Lab documentation
+
+Three reference documents are in the `docs/` directory:
+
+| File | Purpose |
+|---|---|
+| [`docs/overview.html`](docs/overview.html) | Scenario map with architecture diagram, setup steps, and quick command reference |
+| [`docs/talk-track.html`](docs/talk-track.html) | Structured ~30-minute walkthrough — talking points, expected Q&A, best practices |
+| [`docs/raw-commands.html`](docs/raw-commands.html) | Every command verbatim (no Makefile abstraction) — useful for understanding or auditing each step |
+
+---
+
 ## Further reading
 
 - [Vault KMS for Kubernetes — HashiCorp Developer docs](https://developer.hashicorp.com/vault/docs/deploy/kubernetes/kms)
