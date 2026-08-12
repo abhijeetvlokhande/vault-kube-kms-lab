@@ -16,7 +16,7 @@ CONTAINER="${KIND_CLUSTER_NAME}-control-plane"
 BINARY_SRC="$LAB_STATE/vault-kube-kms"
 BINARY_DEST="/opt/kms/vault-kube-kms"
 SECRET_ID_SRC="$LAB_STATE/approle-secret-id"
-SECRET_ID_DEST="/tmp/approle-secret-id"
+SECRET_ID_DEST="/opt/kms/approle-secret-id"
 VAULT_KEY_PATH="transit/keys/kms"
 LOG_FILE="/var/log/kms.log"
 SOCKET_PATH="/tmp/vault-kube-kms.socket"
@@ -46,6 +46,8 @@ docker exec "$CONTAINER" mkdir -p "$(dirname "$BINARY_DEST")"
 docker cp "$BINARY_SRC" "${CONTAINER}:${BINARY_DEST}"
 docker exec "$CONTAINER" chmod +x "$BINARY_DEST"
 
+# Use /opt/kms/ for secret-id — /tmp is a tmpfs in kind nodes and docker cp
+# writes are not visible to running processes inside the container.
 log "Copying AppRole secret-id to ${CONTAINER}:${SECRET_ID_DEST}"
 docker cp "$SECRET_ID_SRC" "${CONTAINER}:${SECRET_ID_DEST}"
 docker exec "$CONTAINER" chmod 0400 "$SECRET_ID_DEST"
