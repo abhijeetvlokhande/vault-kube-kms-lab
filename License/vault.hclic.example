@@ -1,0 +1,8 @@
+# Place your Vault Enterprise license string here.
+# Rename this file to vault.hclic before running the lab.
+# The file must contain a single-line license string with no trailing newline.
+#
+# Example:
+#   02MV4UU43BK5HGYYTOJZWFQNJONEWU33JJF5E4SSPKJDGWTSLKJHFUV2MKBNGUWSLJO5UVSM2WPJSEOOLUIRGUINSVJVCEKM2LKREKIS22I...
+#
+# Never commit the real vault.hclic to source control.

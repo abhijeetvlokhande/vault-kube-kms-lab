@@ -1,0 +1,17 @@
+# kind cluster configuration for vault-kms-kubernetes-lab.
+#
+# The encryption-config.yaml is mounted into the node but the kube-apiserver
+# flag is NOT added here. Encryption is enabled after the KMS plugin is running
+# by scripts/enable-encryption.sh — this matches the upstream integration-test
+# workflow (config-no-encryption.yaml pattern) so the plugin is always running
+# before the API server tries to use it.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  serviceSubnet: "10.96.0.0/12"
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.33.1
+    extraMounts:
+      - hostPath: ./k8s/encryption-config.yaml
+        containerPath: /etc/kubernetes/encryption-config.yaml

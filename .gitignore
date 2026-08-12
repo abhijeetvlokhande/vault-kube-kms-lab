@@ -1,0 +1,15 @@
+# Vault runtime state
+data/
+.vault-init.json
+.vault-init.json.tmp
+.vault-mode
+
+# Lab runtime state (generated at build/setup time)
+.lab-state/
+
+# macOS
+.DS_Store
+
+# License — never commit
+License/vault.hclic
+vault.hclic

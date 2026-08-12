@@ -1,0 +1,22 @@
+services:
+  vault-enterprise:
+    image: hashicorp/vault-enterprise:1.17.3-ent
+    ports:
+      - "8200:8200"
+    volumes:
+      - ${HOST_REPO_ROOT:-.}/config:/vault/config
+      - ${HOST_REPO_ROOT:-.}/data:/vault/data
+      - ${HOST_REPO_ROOT:-.}/.lab-state/logs:/vault/logs
+    environment:
+      VAULT_LICENSE: ${VAULT_LICENSE:-}
+      VAULT_ADDR: http://127.0.0.1:8200
+    cap_add:
+      - IPC_LOCK
+    command: vault server -config=/vault/config/vault.hcl
+    profiles:
+      - enterprise
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8200/v1/sys/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

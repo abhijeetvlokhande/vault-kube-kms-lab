@@ -1,0 +1,17 @@
+# EncryptionConfiguration for Kubernetes API server.
+#
+# Socket path MUST match --listen-address passed to vault-kube-kms.
+# The binary default (confirmed from --help) is unix:///tmp/vault-kube-kms.socket.
+# Both this file and the plugin process must agree on the same path.
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+    providers:
+      - kms:
+          apiVersion: v2
+          name: vault-kube-kms
+          endpoint: unix:///tmp/vault-kube-kms.socket
+          timeout: 3s
+      - identity: {}   # fallback: pre-existing unencrypted secrets remain readable
