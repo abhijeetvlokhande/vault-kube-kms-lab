@@ -1,10 +1,16 @@
-# kind cluster configuration for vault-kms-kubernetes-lab.
+# kind cluster configuration for vault-kube-kms-lab.
 #
-# The encryption-config.yaml is mounted into the node but the kube-apiserver
-# flag is NOT added here. Encryption is enabled after the KMS plugin is running
-# by scripts/enable-encryption.sh — this matches the upstream integration-test
-# workflow (config-no-encryption.yaml pattern) so the plugin is always running
-# before the API server tries to use it.
+# Bakes the encryption-provider-config flags and the required volume mounts
+# into the cluster at creation time via kubeadmConfigPatches, following the
+# same pattern as the upstream vault-kube-kms integration tests.
+#
+# Two volumes are required:
+#   - encryption-config: the EncryptionConfiguration YAML file
+#   - socket:            /tmp directory shared with the vault-kube-kms plugin
+#
+# The encryption flag is NOT set here. The cluster is created without it so
+# the kube-apiserver starts cleanly before the KMS plugin is running.
+# enable-encryption.sh adds the flag after the plugin socket is confirmed ready.
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
@@ -15,3 +21,16 @@ nodes:
     extraMounts:
       - hostPath: ./k8s/encryption-config.yaml
         containerPath: /etc/kubernetes/encryption-config.yaml
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+          extraVolumes:
+            - name: encryption-config
+              hostPath: /etc/kubernetes/encryption-config.yaml
+              mountPath: /etc/kubernetes/encryption-config.yaml
+              pathType: File
+              readOnly: true
+            - name: socket
+              hostPath: /tmp
+              mountPath: /tmp

@@ -80,6 +80,7 @@ SECRET_ID="$(vault write -f -format=json \
 [[ -n "$SECRET_ID" && "$SECRET_ID" != "null" ]] || \
 	error "Failed to generate secret-id"
 
+rm -f "$LAB_STATE/approle-secret-id"
 echo "$SECRET_ID"       > "$LAB_STATE/approle-secret-id"
 echo "$APPROLE_ROLE_ID" > "$LAB_STATE/approle-role-id"
 chmod 0400 "$LAB_STATE/approle-secret-id"

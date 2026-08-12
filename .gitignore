@@ -13,3 +13,7 @@ data/
 # License — never commit
 License/vault.hclic
 vault.hclic
+
+# Kubernetes backup manifests created by enable-encryption.sh
+k8s/*.backup
+k8s/*.bak

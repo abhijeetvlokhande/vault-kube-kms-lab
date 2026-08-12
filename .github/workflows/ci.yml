@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  bootstrap:
+    name: make bootstrap + kms-verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Install kind + kubectl
+        run: |
+          # kind
+          curl -Lo /usr/local/bin/kind \
+            https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+          chmod +x /usr/local/bin/kind
+          # kubectl
+          curl -Lo /usr/local/bin/kubectl \
+            "https://dl.k8s.io/release/v1.33.1/bin/linux/amd64/kubectl"
+          chmod +x /usr/local/bin/kubectl
+
+      - name: Install Vault CLI
+        run: |
+          wget -q -O /tmp/vault.zip \
+            https://releases.hashicorp.com/vault/1.17.3/vault_1.17.3_linux_amd64.zip
+          unzip -q /tmp/vault.zip -d /usr/local/bin/
+
+      - name: Write Vault Enterprise license
+        env:
+          VAULT_LICENSE: ${{ secrets.VAULT_LICENSE }}
+        run: |
+          mkdir -p License
+          echo "$VAULT_LICENSE" > License/vault.hclic
+          test -s License/vault.hclic || (echo "VAULT_LICENSE secret missing or empty" && exit 1)
+
+      - name: make bootstrap
+        run: make bootstrap
+        timeout-minutes: 20
+
+      - name: kms-verify
+        run: ./vault-demo kms-verify
+
+      - name: kms-rotate
+        run: ./vault-demo kms-rotate
+
+      - name: make clean
+        if: always()
+        run: make clean

@@ -43,8 +43,20 @@ chmod +x "$OUTPUT"
 log "Binary built: $OUTPUT"
 log "SHA256: $(sha256sum "$OUTPUT" | awk '{print $1}')"
 
-if ! "$OUTPUT" --help 2>&1 | grep -q 'vault-key-path'; then
-	error "Smoke-test FAILED: --vault-key-path not found in binary --help.
+# Smoke-test: the binary is Linux amd64 and cannot run on the macOS host.
+# Run it inside the kind node if the cluster is up, otherwise skip.
+KIND_CLUSTER_NAME="vault-kube-kms"
+CONTAINER="${KIND_CLUSTER_NAME}-control-plane"
+if kind get clusters 2>/dev/null | grep -q "^${KIND_CLUSTER_NAME}$"; then
+	docker exec "$CONTAINER" mkdir -p /opt/kms
+	docker cp "$OUTPUT" "${CONTAINER}:/opt/kms/vault-kube-kms-smoketest"
+	docker exec "$CONTAINER" chmod +x /opt/kms/vault-kube-kms-smoketest
+	if ! docker exec "$CONTAINER" /opt/kms/vault-kube-kms-smoketest --help 2>&1 | grep -q 'vault-key-path'; then
+		error "Smoke-test FAILED: --vault-key-path not found in binary --help.
 This indicates a build or version mismatch. Check the upstream repo."
+	fi
+	docker exec "$CONTAINER" rm -f /opt/kms/vault-kube-kms-smoketest
+	log "Smoke-test passed: --vault-key-path flag confirmed in binary."
+else
+	log "Smoke-test skipped: kind cluster not running (binary is Linux amd64, cannot run on host)."
 fi
-log "Smoke-test passed: --vault-key-path flag confirmed in binary."
