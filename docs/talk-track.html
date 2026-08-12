@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vault KMS for Kubernetes — Talk Track</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
+    color: #1f2328;
+    background: #ffffff;
+    padding: 32px 20px 60px;
+  }
+
+  .page { max-width: 760px; margin: 0 auto; }
+
+  .header {
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 20px;
+    margin-bottom: 28px;
+  }
+  .header h1 {
+    font-size: 21px;
+    font-weight: 700;
+    color: #1f2328;
+    margin-bottom: 6px;
+  }
+  .header .sub { color: #57606a; font-size: 13px; }
+
+  .badge {
+    display: inline-block;
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #57606a;
+    margin-right: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 28px;
+  }
+  th {
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    padding: 7px 10px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #57606a;
+  }
+  td { border: 1px solid #e5e7eb; padding: 7px 10px; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7f8fa; }
+
+  .section-hdr {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 30px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .section-hdr .num {
+    background: #1f2328;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-hdr h2 { font-size: 16px; font-weight: 700; color: #1f2328; }
+  .section-hdr .badge-time {
+    margin-left: auto;
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: #57606a;
+    white-space: nowrap;
+  }
+
+  .talking-point {
+    background: #fffbeb;
+    border-left: 3px solid #d97706;
+    border-radius: 0 5px 5px 0;
+    padding: 11px 14px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    font-style: italic;
+    color: #1f2328;
+  }
+  .talking-point strong { font-style: normal; }
+
+  .cmd {
+    background: #161b22;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 12px;
+    color: #e6edf3;
+    margin-bottom: 12px;
+    white-space: pre;
+    overflow-x: auto;
+    line-height: 1.65;
+  }
+  .cmd .cmt  { color: #8b949e; }
+
+  .insight {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .insight .label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1d4ed8;
+    margin-bottom: 4px;
+  }
+
+  .outcome {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .outcome .label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #16a34a;
+    margin-bottom: 4px;
+  }
+
+  .step { font-size: 11px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.05em; color: #57606a; margin: 14px 0 5px; }
+
+  .bp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .bp-card {
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .bp-card .bp-title {
+    font-weight: 700;
+    font-size: 12px;
+    margin-bottom: 3px;
+    color: #1f2328;
+  }
+  .bp-card .bp-detail { color: #57606a; font-size: 12px; }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 14px;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+    font-size: 12px;
+    color: #57606a;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div style="margin-bottom:8px">
+      <span class="badge">~30 min</span>
+      <span class="badge">Vault Enterprise</span>
+      <span class="badge">KMS v2</span>
+    </div>
+    <h1>Vault KMS for Kubernetes — Talk Track</h1>
+    <div class="sub">A structured walkthrough of the five lab scenarios. Covers what to say, what to run, and what the output means.</div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Time</th><th>Segment</th><th>Script command</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>0–5 min</td><td>The problem — why default etcd is not secure</td><td>—</td></tr>
+      <tr><td>5–10 min</td><td>Vault side — Transit key, policy, AppRole</td><td><code>./vault-demo kms-setup</code></td></tr>
+      <tr><td>10–17 min</td><td>Proof — live etcdctl dump, ciphertext vs plaintext</td><td><code>./vault-demo kms-verify</code></td></tr>
+      <tr><td>17–23 min</td><td>Zero-downtime key rotation</td><td><code>./vault-demo kms-rotate</code></td></tr>
+      <tr><td>23–28 min</td><td>Resilience — Vault outage behaviour</td><td><code>./vault-demo kms-failover</code></td></tr>
+      <tr><td>28–32 min</td><td>Observability — metrics and audit log</td><td><code>./vault-demo kms-telemetry</code></td></tr>
+      <tr><td>32–35 min</td><td>Production best practices</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-hdr">
+    <div class="num" style="background:#57606a">0</div>
+    <h2>The Problem</h2>
+    <span class="badge-time">5 min</span>
+  </div>
+
+  <div class="talking-point">
+    "Kubernetes secrets are called secrets, but by default they are not secret at the storage layer. etcd stores them as base64-encoded data. Base64 is encoding, not encryption — anyone with read access to the etcd data directory, an etcd backup file, or a cloud-managed snapshot can decode every secret in the cluster with a single command."
+  </div>
+
+  <div class="talking-point">
+    "The Kubernetes API server supports a KMS provider interface. When it is configured, every write to etcd goes through an external key manager. The secret data is encrypted before it reaches storage, and the key never touches etcd or the cluster nodes. That key manager can be Vault."
+  </div>
+
+  <div class="insight">
+    <div class="label">Background</div>
+    The encryption uses an envelope model: Kubernetes generates a short-lived Data Encryption Key (DEK) per secret. Vault's Transit engine wraps that DEK with a long-lived Key Encryption Key (KEK). Only the wrapped DEK lands in etcd — the KEK never leaves Vault. Decryption requires both etcd (for the wrapped DEK) and Vault (for the KEK), so neither alone is sufficient.
+  </div>
+
+  <div class="section-hdr">
+    <div class="num">1</div>
+    <h2>Vault Side — Transit Key, Policy, AppRole</h2>
+    <span class="badge-time">5 min</span>
+  </div>
+
+  <div class="talking-point">
+    "Before we look at etcd, let me show what Vault is doing. We configure three things: a Transit key that acts as the KEK, a minimum-privilege policy that the plugin uses to call Transit, and an AppRole so the plugin can authenticate without a human in the loop."
+  </div>
+
+  <div class="step">Walk through (already configured by bootstrap)</div>
+  <div class="cmd"><span class="cmt"># Show the Transit key — the KEK that wraps all Kubernetes DEKs</span>
+vault read transit/keys/kms
+
+<span class="cmt"># Show the policy — minimum required paths for the plugin</span>
+vault policy read transit-encrypt-decrypt
+
+<span class="cmt"># Show the AppRole role</span>
+vault read auth/approle/role/kube-kms</div>
+
+  <div class="talking-point">
+    "The policy has four paths: encrypt, decrypt, read the key (for status polling), and <code>sys/license/status</code> so the plugin can verify it is talking to Vault Enterprise. The plugin cannot read or write anything outside Transit."
+  </div>
+
+  <div class="talking-point">
+    "The AppRole secret-id lives at <code>/tmp/approle-secret-id</code> inside the kind node, mode 0400. The plugin authenticates once at startup and uses token renewal from that point on. No static credentials sitting in a config file."
+  </div>
+
+  <div class="section-hdr">
+    <div class="num">2</div>
+    <h2>The Proof — etcdctl Dump</h2>
+    <span class="badge-time">7 min</span>
+  </div>
+
+  <div class="talking-point">
+    "I am going to write a Kubernetes secret — completely normally, the same way any application or developer would. Then I will bypass Kubernetes entirely and read the raw bytes from etcd."
+  </div>
+
+  <div class="step">Run</div>
+  <div class="cmd">./vault-demo kms-verify</div>
+
+  <div class="talking-point">
+    "Look at the raw etcd output. The entry begins with <strong>k8s:enc:kms:v2:vault-kube-kms:</strong> — that is the KMS v2 ciphertext marker. Everything after it is encrypted data. The plaintext value is not in etcd at all."
+  </div>
+
+  <div class="insight">
+    <div class="label">What the output means</div>
+    <strong>k8s:enc:kms:v2:vault-kube-kms:</strong> — the API server wrote this prefix to mark the entry as KMS v2 encrypted. The bytes that follow are the wrapped DEK seed. To read the secret, Vault must unwrap the DEK. Without Vault, this data is unusable.
+  </div>
+
+  <div class="talking-point">
+    "<code>kubectl get secret</code> returns the correct plaintext. The API server called Vault Transit in the background to decrypt the DEK seed, then used it to decrypt the secret before returning it. This decryption is transparent to any application using the Kubernetes API, and it is logged in Vault's audit log every time it happens."
+  </div>
+
+  <div class="outcome">
+    <div class="label">What to point at on screen</div>
+    (1) The raw etcd bytes starting with <code>k8s:enc:kms:v2:vault-kube-kms:</code>
+    &nbsp;·&nbsp;
+    (2) The grep showing zero matches for the plaintext value
+    &nbsp;·&nbsp;
+    (3) The kubectl output returning the correct plaintext — decrypted by Vault on this read
+  </div>
+
+  <div class="section-hdr">
+    <div class="num">3</div>
+    <h2>Zero-Downtime Key Rotation</h2>
+    <span class="badge-time">6 min</span>
+  </div>
+
+  <div class="talking-point">
+    "Key rotation is one of those requirements that sounds straightforward but in practice often means a maintenance window. With Vault Transit and KMS v2, rotation is a single API call. No API server restart. No application downtime. The plugin detects the new key version automatically through the KMS v2 Status RPC."
+  </div>
+
+  <div class="step">Run</div>
+  <div class="cmd">./vault-demo kms-rotate</div>
+
+  <div class="talking-point">
+    "We rotated from version 1 to version 2. <code>min_decryption_version</code> is still 1 — Vault retains the old key version so it can decrypt data written before the rotation. Nothing breaks. Data written before the rotation is still readable. Data written after uses the new key."
+  </div>
+
+  <div class="insight">
+    <div class="label">Operational note</div>
+    A typical rotation policy is 90 days. With Vault, that means a cron job runs <code>vault write -f transit/keys/kms/rotate</code> and then <code>kubectl get secrets --all-namespaces -o json | kubectl replace -f -</code>. Zero coordination with Kubernetes operators. The audit log shows exactly when each rotation happened.
+  </div>
+
+  <div class="section-hdr">
+    <div class="num">4</div>
+    <h2>Resilience — Vault Outage Behaviour</h2>
+    <span class="badge-time">5 min</span>
+  </div>
+
+  <div class="talking-point">
+    "KMS v2 has a specific and well-defined behaviour when Vault is unreachable. Let me show you exactly what happens."
+  </div>
+
+  <div class="step">Run</div>
+  <div class="cmd">./vault-demo kms-failover</div>
+
+  <div class="talking-point">
+    "Vault is stopped. Reading an existing secret succeeds — that is KMS v2's DEK-seed caching. The API server caches the decryption seed in memory after processing each secret. As long as the API server has not restarted, it can serve reads for any secret it has already seen without contacting Vault."
+  </div>
+
+  <div class="talking-point">
+    "A write fails with a 3-second timeout. The API server tried to call the plugin to encrypt a new DEK seed, could not reach Vault, and rejected the write rather than storing unencrypted data."
+  </div>
+
+  <div class="insight">
+    <div class="label">What this means for Vault HA</div>
+    The HA requirement for Vault in a KMS deployment is <strong>write availability</strong>, not read availability. Existing secrets remain readable during a Vault outage. Only new writes fail. This is the reason why Vault HA Replication is the right solution for this failure mode.
+  </div>
+
+  <div class="section-hdr">
+    <div class="num">5</div>
+    <h2>Observability — Metrics and Audit Log</h2>
+    <span class="badge-time">4 min</span>
+  </div>
+
+  <div class="talking-point">
+    "Every encrypt and decrypt the API server performs is logged in Vault's audit log. Let me show two views: the structured audit log and the plugin's Prometheus metrics."
+  </div>
+
+  <div class="step">Run</div>
+  <div class="cmd">./vault-demo kms-telemetry</div>
+
+  <div class="talking-point">
+    "The audit log entries show timestamp, operation, key path, and identity. In production you can enrich the AppRole token with cluster name, namespace, or environment — that context appears in every audit entry."
+  </div>
+
+  <div class="insight">
+    <div class="label">What rpc_server_duration_milliseconds shows</div>
+    This is a latency histogram for every KMS v2 gRPC call from the API server to the plugin — how long each encrypt or decrypt round-trip takes. Low values (single-digit milliseconds) indicate a healthy plugin. Latency spikes here mean Vault is slow or the path to it is congested. Scrape this from <code>http://127.0.0.1:9090/metrics</code> inside the kind node.
+  </div>
+
+  <div class="section-hdr">
+    <div class="num" style="background:#57606a">✓</div>
+    <h2>Production Best Practices</h2>
+    <span class="badge-time">3 min</span>
+  </div>
+
+  <div class="bp-grid">
+    <div class="bp-card">
+      <div class="bp-title">Rotate the KEK on a schedule</div>
+      <div class="bp-detail">90-day rotation is a common baseline. Vault's <code>auto_rotate_period</code> on the Transit key can automate this without any external scheduler.</div>
+    </div>
+    <div class="bp-card">
+      <div class="bp-title">Restrict the AppRole secret-id</div>
+      <div class="bp-detail">Set <code>secret_id_num_uses=1</code> and automate renewal. In production back it with a secrets manager or use Vault Agent.</div>
+    </div>
+    <div class="bp-card">
+      <div class="bp-title">Use short token TTLs</div>
+      <div class="bp-detail">The lab uses <code>token_ttl=1h</code>. Keep TTLs short and rely on renewal. A compromised token expires quickly.</div>
+    </div>
+    <div class="bp-card">
+      <div class="bp-title">Deploy Vault HA for write availability</div>
+      <div class="bp-detail">As shown in the resilience scenario: reads survive a Vault outage, writes do not. Vault HA Replication ensures the KMS path stays available.</div>
+    </div>
+    <div class="bp-card">
+      <div class="bp-title">Enable TLS between plugin and Vault</div>
+      <div class="bp-detail">This lab uses <code>--tls-skip-verify</code> for simplicity. In production the plugin should verify Vault's TLS certificate.</div>
+    </div>
+    <div class="bp-card">
+      <div class="bp-title">Alert on plugin health endpoints</div>
+      <div class="bp-detail">Scrape <code>/healthz</code> and <code>/readyz</code> (port 8081). A non-200 from <code>/readyz</code> means new secret writes will fail within 3 seconds.</div>
+    </div>
+  </div>
+
+  <footer>
+    Made with IBM Bob
+  </footer>
+
+</div>
+</body>
+</html>

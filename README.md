@@ -1,105 +1,177 @@
-# Vault KMS on Kubernetes Lab
+# Vault KMS on Kubernetes
 
-> **Beta feature** — `vault-kube-kms` is stable but subject to change. Do not use in production Vault deployments.
-> **Vault Enterprise required** — the plugin validates `sys/license/status` at startup and exits immediately against Community Edition.
+> **Beta feature** — `vault-kube-kms` is subject to change. Do not use in production without thorough testing.
+> **Vault Enterprise required** — the plugin validates `sys/license/status` at startup and exits immediately when connected to a Community Edition instance.
 
-This lab demonstrates Vault as a Kubernetes KMS v2 provider, encrypting Kubernetes secrets at rest in etcd. The [vault-kube-kms](https://github.com/hashicorp/vault-kube-kms) plugin bridges `kube-apiserver` ↔ Vault Transit so that key material never lives in the cluster.
+## What is vault-kube-kms?
+
+[vault-kube-kms](https://github.com/hashicorp/vault-kube-kms) is a Kubernetes KMS v2 provider plugin that integrates HashiCorp Vault with the Kubernetes API server's [encryption at rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/) mechanism.
+
+### The problem it solves
+
+By default, Kubernetes stores secrets in etcd as base64-encoded plaintext. Anyone with access to an etcd backup, an etcd snapshot, or the underlying storage can read every secret in the cluster — passwords, tokens, certificates, and private keys — without authentication. This is a significant risk in shared infrastructure, regulated environments, and any deployment where storage-layer access is not fully controlled.
+
+### How it works
+
+The Kubernetes API server supports an [encryption provider](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/) interface that intercepts every secret write and read. When configured to use a KMS provider, the API server calls the plugin over a local Unix socket. The plugin forwards the request to Vault's [Transit secrets engine](https://developer.hashicorp.com/vault/docs/secrets/transit), which encrypts or decrypts the data encryption key (DEK) seed using a key encryption key (KEK) that never leaves Vault.
+
+```
+kubectl write/read secret
+         │
+         ▼
+   kube-apiserver
+         │  gRPC (KMS v2, Unix socket)
+         ▼
+   vault-kube-kms plugin
+         │  Vault API
+         ▼
+   Vault Transit engine
+   (KEK: transit/keys/kms)
+         │
+         ▼
+   etcd  ←  stores only ciphertext
+```
+
+### What this means in practice
+
+- **etcd at rest is ciphertext.** An etcd backup or stolen disk yields nothing without Vault.
+- **Vault holds the only KEK.** Cloud storage, etcd admins, and infrastructure operators cannot decrypt secrets without going through Vault.
+- **Transparent to applications.** `kubectl get secret` still returns plaintext — the API server handles decryption automatically.
+- **Key rotation with no downtime.** Rotating the Vault Transit key requires one API call; no API server restart, no application changes.
+- **Full audit trail.** Every encrypt and decrypt call is logged in Vault's audit log.
 
 ---
 
-## What this demo proves to the customer
+## What this lab covers
 
-| Customer question | Demo answer |
+| Scenario | What it shows |
 |---|---|
-| Is my etcd actually encrypted? | Live `etcdctl` dump shows `k8s:enc:kms:v2:vault-kube-kms:` prefix — plaintext is absent |
-| Who controls the keys? | Vault Transit only — Kubernetes holds encrypted DEK seeds, never raw key material |
-| Can I rotate without downtime? | One `vault write -f transit/keys/kms/rotate` — plugin auto-detects, no API server restart |
-| What if Vault goes down? | KMS v2 DEK-seed caching keeps reads alive; new writes fail — shows why Vault HA matters |
-| How do I audit key usage? | Vault audit log + Prometheus `/metrics` on the plugin |
+| etcd encryption proof | `etcdctl` dump shows `k8s:enc:kms:v2:vault-kube-kms:` prefix — plaintext is absent |
+| Key ownership | Vault Transit holds the KEK — Kubernetes stores only encrypted DEK seeds |
+| Zero-downtime rotation | One `vault write -f transit/keys/kms/rotate` — plugin auto-detects, no API server restart |
+| Resilience under outage | KMS v2 DEK-seed caching keeps reads alive when Vault is unreachable; new writes fail |
+| Observability | Vault audit log + Prometheus `/metrics` from the plugin |
 
 ---
 
-## First-time setup (fresh clone)
+## Prerequisites
 
-### Step 0 — Install dependencies
+- macOS or Linux
+- Docker Desktop (macOS) or Docker Engine (Linux)
+- Internet access to pull container images and clone the vault-kube-kms source
+
+All other tools (`kind`, `kubectl`, `go`, `vault` CLI, `jq`) are installed automatically by the setup script.
+
+---
+
+## Getting started
+
+### 1. Install dependencies
 
 ```bash
 bash scripts/install-dependencies.sh
 ```
 
-This script installs `kind`, `kubectl`, `go`, `vault` CLI, `jq`, `curl`, and `git` via Homebrew (macOS) or apt/dnf (Linux). Docker Desktop must be installed manually on macOS — the script will tell you if it is missing.
+Installs `kind`, `kubectl`, `go`, `vault` CLI, `jq`, `curl`, and `git` via Homebrew (macOS) or apt/dnf (Linux). Docker Desktop must be installed manually on macOS — the script prints instructions if it is missing.
 
-> **Note:** `etcdctl` does **not** need to be installed on your laptop. The setup script installs it inside the kind node automatically.
+> `etcdctl` does **not** need to be installed on your machine. It is installed automatically inside the kind node by the setup scripts.
 
-### Step 1 — Add your Vault Enterprise license
+### 2. Add your Vault Enterprise license
 
-After cloning, you must place your Vault Enterprise license file at:
+Place your license file at:
 
 ```
 License/vault.hclic
 ```
 
-The file must contain a single-line license string with no trailing newline. An example placeholder is at `License/vault.hclic.example`.
+The file must contain a single-line license string. An example placeholder is at [`License/vault.hclic.example`](License/vault.hclic.example).
 
 ```bash
-# Copy your license file into place:
 cp /path/to/your/vault.hclic License/vault.hclic
 
 # Verify it is non-empty:
 test -s License/vault.hclic && echo "License OK" || echo "LICENSE MISSING OR EMPTY"
 ```
 
-> ⚠️ `License/vault.hclic` is in `.gitignore` — it will never be committed. Do not export or share it.
+> `License/vault.hclic` is in `.gitignore` and will never be committed.
 
-Alternatively, export it as an environment variable before running any `make` target:
+Alternatively, export the license as an environment variable:
 
 ```bash
 export VAULT_LICENSE="$(cat /path/to/vault.hclic)"
 ```
 
----
+### 3. Obtain the vault-kube-kms source
 
-## Quick Start
+The build step (`make build-kms-binary`) clones the upstream repository automatically:
 
 ```bash
-# 1. Install tools (first time only)
-bash scripts/install-dependencies.sh
+# Automatic (default) — requires internet access to github.com/hashicorp/vault-kube-kms
+make build-kms-binary
+```
 
-# 2. Add license (first time only)
-cp /path/to/vault.hclic License/vault.hclic
+If you do not have access to the upstream repository, obtain a source archive (`.zip` or `.tar.gz`) and extract it manually:
 
-# 3. One-shot bootstrap (Vault + k8s + plugin + encryption — ~5 minutes)
+```bash
+# Extract the archive to the expected path
+unzip vault-kube-kms-main.zip -d /tmp/
+mv /tmp/vault-kube-kms-main /tmp/vault-kube-kms-src
+
+# Then run the build (skips the clone step because the directory already exists)
+make build-kms-binary
+```
+
+### 4. Bootstrap the full environment
+
+```bash
 make bootstrap
+```
 
-# 4. Run the demo scenes
+This runs all five setup steps in sequence (approximately 5–10 minutes on first run):
+
+1. Start Vault Enterprise, initialize, and unseal
+2. Configure Vault: Transit engine, KEK, policy, AppRole
+3. Create kind cluster (Kubernetes v1.33.1), install etcdctl inside the node
+4. Build and copy the vault-kube-kms binary into the kind node, start the plugin
+5. Patch the kube-apiserver manifest to enable KMS encryption, wait for the API server to restart
+
+### 5. Run the scenarios
+
+```bash
 ./vault-demo kms-verify     # Prove etcd is encrypted
 ./vault-demo kms-rotate     # Zero-downtime key rotation
-./vault-demo kms-failover   # Vault outage resilience
-./vault-demo kms-telemetry  # Prometheus metrics + audit log
-./vault-demo all            # All scenes in sequence
-```
-
-### Step-by-step alternative
-
-```bash
-make enterprise          # Start Vault Enterprise, init + unseal
-./vault-demo kms-setup   # Configure Transit + AppRole (must run before setup-k8s)
-make setup-k8s           # Create kind cluster (k8s v1.33.1), install etcdctl in node
-make build-kms-binary    # Clone vault-kube-kms, cross-compile Linux amd64 binary
-make deploy-kms          # Copy binary into kind node, start plugin, verify /readyz
-make enable-encryption   # Patch kube-apiserver manifest, wait for healthy restart
-./vault-demo kms-verify  # Prove it works
+./vault-demo kms-failover   # Resilience under Vault outage
+./vault-demo kms-telemetry  # Prometheus metrics and Vault audit log
+./vault-demo all            # Run all scenarios in sequence
 ```
 
 ---
 
-## Verify your setup is correct
+## Step-by-step (instead of bootstrap)
+
+If you prefer to run each step individually — useful when iterating or troubleshooting:
+
+```bash
+make enterprise          # Start Vault Enterprise, initialize, and unseal
+./vault-demo kms-setup   # Configure Transit engine, AppRole, policy, audit log
+make setup-k8s           # Create kind cluster, detect Docker bridge gateway, install etcdctl
+make build-kms-binary    # Clone vault-kube-kms source, cross-compile Linux amd64 binary
+make deploy-kms          # Copy binary into kind node, start plugin, wait for /readyz
+make enable-encryption   # Patch kube-apiserver manifest, wait for healthy restart
+./vault-demo kms-verify  # Verify encryption is working
+```
+
+> **Order matters.** `kms-setup` must run before `setup-k8s` because it generates the AppRole secret-id that the plugin needs. `deploy-kms` must run before `enable-encryption` because the API server will refuse to start if the KMS socket is not present.
+
+---
+
+## Verify the build
 
 ```bash
 make verify-assumptions
 ```
 
-This checks four facts about the compiled binary that were verified against the source and in some cases **contradict the official HashiCorp docs** (which are stale):
+Runs four checks against the compiled binary to confirm the build is correct:
 
 ```
 [1/4] --vault-key-path flag exists in binary...
@@ -115,19 +187,17 @@ This checks four facts about the compiled binary that were verified against the 
   PASS: etcd prefix confirmed: k8s:enc:kms:v2:vault-kube-kms:
 ```
 
-If any check fails, the lab will tell you exactly what is wrong before you reach the customer session.
-
 ---
 
 ## Architecture
 
 ```
-Customer Laptop
+Your Machine
 │
-├── Docker Compose (host)
+├── Docker Compose
 │   └── vault-enterprise              port 8200, Shamir unseal, file storage
 │       ├── Transit engine: transit/
-│       ├── Key: transit/keys/kms     AES-256-GCM96
+│       ├── Key: transit/keys/kms     AES-256-GCM96 KEK
 │       ├── Policy: transit-encrypt-decrypt
 │       │     path transit/encrypt/kms  { capabilities = ["update","create"] }
 │       │     path transit/decrypt/kms  { capabilities = ["update","create"] }
@@ -138,36 +208,22 @@ Customer Laptop
 │
 └── kind cluster  (vault-kube-kms, k8s v1.33.1)
     └── vault-kube-kms-control-plane  (Docker container)
-        ├── /tmp/vault-kube-kms.socket          gRPC Unix socket
+        ├── /tmp/vault-kube-kms.socket          gRPC KMS v2 Unix socket
         ├── /tmp/approle-secret-id              mode 0400
         ├── /etc/kubernetes/encryption-config.yaml
         │     endpoint: unix:///tmp/vault-kube-kms.socket
-        ├── /opt/kms/vault-kube-kms             Linux binary (built from source)
+        ├── /opt/kms/vault-kube-kms             Linux binary (cross-compiled from source)
         │     --vault-key-path=transit/keys/kms
         │     --vault-address=http://<docker-gateway>:8200
         │     --approle-role-id=lab-kube-kms
         │     --approle-secret-id-path=/tmp/approle-secret-id
-        │     --tls-skip-verify  ← LAB ONLY, never in production
+        │     --tls-skip-verify  ← LAB ONLY, not for production
         │     --metrics-port=9090
         │     --health-port=8081
         └── kube-apiserver
               --encryption-provider-config=/etc/kubernetes/encryption-config.yaml
               --encryption-provider-config-automatic-reload=true
 ```
-
----
-
-## Demo talk track (30 minutes)
-
-| Time | Segment |
-|---|---|
-| 0–3 min | **Why** — "etcd stores secrets as base64, not ciphertext. An etcd backup is a full credential dump." |
-| 3–8 min | **Vault side** — show Transit key, minimum policy, AppRole in Vault UI |
-| 8–14 min | **Proof** — `kms-verify`: etcdctl dump shows ciphertext prefix, plaintext absent, kubectl decrypts transparently |
-| 14–20 min | **Rotation** — `kms-rotate`: one Vault command, plugin auto-detects, no restart |
-| 20–25 min | **Resilience** — `kms-failover`: stop Vault, reads survive (KMS v2 cache), writes fail, recover |
-| 25–28 min | **Observability** — `kms-telemetry`: Prometheus latency histograms + Vault audit log |
-| 28–30 min | **Best practices** — 90-day rotation, secret-id 0400, short TTL, Vault HA = write availability |
 
 ---
 
@@ -178,12 +234,12 @@ make bootstrap           Full one-shot startup (Vault + k8s + binary + plugin + 
 
 make enterprise          Start Vault Enterprise
 make setup-k8s           Create kind cluster + detect Docker bridge gateway
-make build-kms-binary    Clone vault-kube-kms repo + cross-compile Linux amd64 binary
+make build-kms-binary    Clone vault-kube-kms source + cross-compile Linux amd64 binary
 make deploy-kms          Copy binary into kind node + start plugin
 make enable-encryption   Patch kube-apiserver manifest + wait for healthy restart
 
-make verify-assumptions  Prove source-derived claims against compiled binary
-make demo                Run all demo modules in sequence
+make verify-assumptions  Run checks against the compiled binary
+make demo                Run all scenarios in sequence
 make verify              kms-verify only
 make rotate              kms-rotate only
 make failover            kms-failover only
@@ -192,7 +248,7 @@ make telemetry           kms-telemetry only
 make logs                Tail vault-kube-kms plugin log
 make status              Vault + kind + plugin status summary
 make clean               Tear down everything (kind cluster + Vault + lab state)
-make enterprise-reset    Reset Vault raft storage and init state
+make enterprise-reset    Reset Vault storage and init state
 ```
 
 ---
@@ -202,7 +258,7 @@ make enterprise-reset    Reset Vault raft storage and init state
 **`vault Community Edition detected` in plugin logs**
 ```bash
 test -s License/vault.hclic && echo "License OK" || echo "MISSING"
-# Or check: vault status | grep -i enterprise
+vault status | grep -i enterprise
 ```
 
 **Plugin socket not found after `make deploy-kms`**
@@ -217,17 +273,17 @@ docker exec vault-kube-kms-control-plane crictl logs \
   $(docker exec vault-kube-kms-control-plane crictl ps --name kube-apiserver -q 2>/dev/null) 2>/dev/null | tail -30
 ```
 
-**Socket path mismatch (API server can't reach plugin)**
+**Socket path mismatch**
 ```bash
 # These two must match exactly:
 grep endpoint k8s/encryption-config.yaml
 docker exec vault-kube-kms-control-plane grep 'listen-addr' /var/log/kms.log
 ```
 
-**Unseal fails after failover demo**
+**Unseal fails after the failover scenario**
 ```bash
-# init-vault.sh reads keys from .vault-init.json automatically — should self-heal
-# If not, unseal manually:
+# init-vault.sh reads keys from .vault-init.json automatically and should self-heal.
+# To unseal manually:
 jq -r '.unseal_keys_b64[0]' .vault-init.json | xargs vault operator unseal
 jq -r '.unseal_keys_b64[1]' .vault-init.json | xargs vault operator unseal
 jq -r '.unseal_keys_b64[2]' .vault-init.json | xargs vault operator unseal
@@ -235,7 +291,7 @@ jq -r '.unseal_keys_b64[2]' .vault-init.json | xargs vault operator unseal
 
 **Go version too old for build**
 ```bash
-go version          # need >= 1.21
+go version          # requires >= 1.21
 brew upgrade go     # macOS
 ```
 
@@ -247,17 +303,26 @@ make bootstrap
 
 ---
 
-## What is NOT in this repo (intentionally)
+## What is not in this repo
 
-| Item | Why excluded | Where to get it |
+| Item | Reason | How to obtain |
 |---|---|---|
 | `License/vault.hclic` | Secret — never committed | Your Vault Enterprise entitlement |
-| `vault-kube-kms` binary | Built from source at runtime | `make build-kms-binary` clones and compiles |
-| `.lab-state/` contents | Generated at runtime | Created by `make deploy-kms` |
-| `data/` | Vault raft storage — machine-specific | Created by `make enterprise` |
+| `vault-kube-kms` binary | Built from source at runtime | `make build-kms-binary` (or provide a source archive) |
+| `.lab-state/` contents | Generated at runtime | Created automatically during setup |
+| `data/` | Vault storage — machine-specific | Created by `make enterprise` |
 
 ---
 
 ## Supported Kubernetes versions
 
-IBM-tested: **1.32, 1.33, 1.34, 1.35, 1.36**. This lab pins to `kindest/node:v1.33.1`.
+Tested with: **1.32, 1.33, 1.34, 1.35, 1.36**. This lab pins to `kindest/node:v1.33.1`.
+
+---
+
+## Further reading
+
+- [Vault KMS for Kubernetes — HashiCorp Developer docs](https://developer.hashicorp.com/vault/docs/deploy/kubernetes/kms)
+- [Kubernetes Encryption at Rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/)
+- [Vault Transit Secrets Engine](https://developer.hashicorp.com/vault/docs/secrets/transit)
+- [KMS v2 KEP (Kubernetes Enhancement Proposal)](https://github.com/kubernetes/enhancements/tree/master/keps/sig-auth/3299-kms-v2-improvements)
