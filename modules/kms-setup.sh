@@ -86,10 +86,12 @@ chmod 0400 "$LAB_STATE/approle-secret-id"
 log "secret-id written to $LAB_STATE/approle-secret-id (mode 0400)"
 
 # Copy secret-id into kind node (if cluster is up)
+# Use /opt/kms/ — /tmp is a tmpfs in kind nodes and docker cp writes are not visible
 if kind get clusters 2>/dev/null | grep -q "^${KIND_CLUSTER_NAME}$"; then
-	log "Copying secret-id into kind node: ${CONTAINER}:/tmp/approle-secret-id"
-	docker cp "$LAB_STATE/approle-secret-id" "${CONTAINER}:/tmp/approle-secret-id"
-	docker exec "$CONTAINER" chmod 0400 /tmp/approle-secret-id
+	log "Copying secret-id into kind node: ${CONTAINER}:/opt/kms/approle-secret-id"
+	docker exec "$CONTAINER" mkdir -p /opt/kms
+	docker cp "$LAB_STATE/approle-secret-id" "${CONTAINER}:/opt/kms/approle-secret-id"
+	docker exec "$CONTAINER" chmod 0400 /opt/kms/approle-secret-id
 	log "secret-id deployed to kind node"
 else
 	log "kind cluster not yet up — secret-id will be copied by make deploy-kms"
