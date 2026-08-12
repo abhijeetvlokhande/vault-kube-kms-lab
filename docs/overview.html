@@ -224,7 +224,7 @@
       <!-- kube-apiserver -->
       <rect x="200" y="10" width="150" height="40" rx="6" fill="#fff" stroke="#1f2328" stroke-width="2"/>
       <text x="275" y="26" text-anchor="middle" font-weight="700" fill="#1f2328">kube-apiserver</text>
-      <text x="275" y="42" text-anchor="middle" fill="#57606a">encryption-provider-config</text>
+      <text x="275" y="42" text-anchor="middle" fill="#57606a">encryption enabled</text>
 
       <!-- arrow apiserver → plugin -->
       <line x1="350" y1="30" x2="420" y2="30" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr)"/>
@@ -244,12 +244,12 @@
       <rect x="380" y="90" width="240" height="55" rx="6" fill="#fff" stroke="#3b82d4" stroke-width="2"/>
       <text x="500" y="109" text-anchor="middle" font-weight="700" fill="#3b82d4">Vault Enterprise</text>
       <text x="500" y="126" text-anchor="middle" fill="#57606a">Transit engine · transit/keys/kms</text>
-      <text x="500" y="140" text-anchor="middle" fill="#57606a">KEK (AES-256-GCM96)</text>
+      <text x="500" y="140" text-anchor="middle" fill="#57606a">Master key (AES-256-GCM96)</text>
 
       <!-- arrow apiserver → etcd -->
       <line x1="275" y1="50" x2="275" y2="165" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr)"/>
-      <text x="248" y="115" fill="#57606a" font-size="10">wrapped</text>
-      <text x="248" y="126" fill="#57606a" font-size="10">DEK only</text>
+      <text x="244" y="112" fill="#57606a" font-size="10">encrypted</text>
+      <text x="244" y="123" fill="#57606a" font-size="10">data only</text>
 
       <!-- etcd -->
       <rect x="170" y="165" width="210" height="42" rx="6" fill="#f7f8fa" stroke="#e5e7eb" stroke-width="1.5"/>
@@ -312,7 +312,7 @@
       <div class="num">2</div>
       <div class="body">
         <div class="title">Key rotation</div>
-        <div class="desc">Rotate the Vault Transit KEK with one API call. The plugin detects the new key version via the KMS v2 Status RPC. Re-encrypt all existing secrets. No API server restart, no application changes.</div>
+        <div class="desc">Rotate the Vault Transit master key with one API call. The plugin detects the new key version automatically. Re-encrypt all existing secrets. No API server restart, no application changes.</div>
         <span class="outcome">New key version active — old version retained for decrypt</span>
       </div>
       <div class="cmd-box">./vault-demo kms-rotate</div>

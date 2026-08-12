@@ -10,7 +10,7 @@
   body {
     font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
     font-size: 14px;
-    line-height: 1.65;
+    line-height: 1.7;
     color: #1f2328;
     background: #ffffff;
     padding: 32px 20px 60px;
@@ -23,12 +23,7 @@
     padding-bottom: 20px;
     margin-bottom: 28px;
   }
-  .header h1 {
-    font-size: 21px;
-    font-weight: 700;
-    color: #1f2328;
-    margin-bottom: 6px;
-  }
+  .header h1 { font-size: 21px; font-weight: 700; margin-bottom: 6px; }
   .header .sub { color: #57606a; font-size: 13px; }
   .header .author { color: #57606a; font-size: 12px; margin-top: 6px; }
 
@@ -65,12 +60,14 @@
   }
   td { border: 1px solid #e5e7eb; padding: 7px 10px; vertical-align: top; }
   tr:nth-child(even) td { background: #f7f8fa; }
+  code { font-family: "SF Mono","Fira Code","Consolas",monospace; font-size: 11px;
+         background:#f7f8fa; border:1px solid #e5e7eb; border-radius:3px; padding:1px 5px; }
 
   .section-hdr {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin: 30px 0 14px;
+    margin: 32px 0 14px;
     padding-bottom: 8px;
     border-bottom: 1px solid #e5e7eb;
   }
@@ -84,7 +81,7 @@
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
-  .section-hdr h2 { font-size: 16px; font-weight: 700; color: #1f2328; }
+  .section-hdr h2 { font-size: 16px; font-weight: 700; }
   .section-hdr .badge-time {
     margin-left: auto;
     background: #f7f8fa;
@@ -96,18 +93,19 @@
     white-space: nowrap;
   }
 
-  .talking-point {
+  /* Say this — the script */
+  .say {
     background: #fffbeb;
     border-left: 3px solid #d97706;
     border-radius: 0 5px 5px 0;
-    padding: 11px 14px;
+    padding: 12px 16px;
     font-size: 13px;
     margin-bottom: 12px;
-    font-style: italic;
     color: #1f2328;
+    line-height: 1.7;
   }
-  .talking-point strong { font-style: normal; }
 
+  /* Run this */
   .cmd {
     background: #161b22;
     border-radius: 6px;
@@ -120,45 +118,8 @@
     overflow-x: auto;
     line-height: 1.65;
   }
-  .cmd .cmt  { color: #8b949e; }
 
-  .insight {
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    border-radius: 6px;
-    padding: 10px 14px;
-    font-size: 13px;
-    margin-bottom: 14px;
-  }
-  .insight .label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #1d4ed8;
-    margin-bottom: 4px;
-  }
-
-  .outcome {
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 6px;
-    padding: 10px 14px;
-    font-size: 13px;
-    margin-bottom: 14px;
-  }
-  .outcome .label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #16a34a;
-    margin-bottom: 4px;
-  }
-
-  .step { font-size: 11px; font-weight: 700; text-transform: uppercase;
-          letter-spacing: 0.05em; color: #57606a; margin: 14px 0 5px; }
-
+  /* Q&A */
   .qa {
     border: 1px solid #e5e7eb;
     border-radius: 6px;
@@ -176,10 +137,48 @@
   }
   .qa-a {
     padding: 10px 14px;
-    font-style: italic;
     color: #1f2328;
-    line-height: 1.65;
+    line-height: 1.7;
   }
+
+  /* Tip box */
+  .tip {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .tip .label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1d4ed8;
+    margin-bottom: 4px;
+  }
+
+  /* Point at this */
+  .point {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .point .label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #16a34a;
+    margin-bottom: 4px;
+  }
+
+  .step { font-size: 11px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.05em; color: #57606a; margin: 14px 0 5px; }
 
   .bp-grid {
     display: grid;
@@ -194,20 +193,15 @@
     padding: 10px 12px;
     font-size: 13px;
   }
-  .bp-card .bp-title {
-    font-weight: 700;
-    font-size: 12px;
-    margin-bottom: 3px;
-    color: #1f2328;
-  }
-  .bp-card .bp-detail { color: #57606a; font-size: 12px; }
+  .bp-card .bp-title { font-weight: 700; font-size: 12px; margin-bottom: 4px; }
+  .bp-card .bp-detail { color: #57606a; font-size: 12px; line-height: 1.6; }
 
   .arch-wrap {
     background: #f7f8fa;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     padding: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     overflow-x: auto;
   }
   .arch-wrap svg { display: block; margin: 0 auto; }
@@ -232,22 +226,23 @@
       <span class="badge">KMS v2</span>
     </div>
     <h1>Vault KMS for Kubernetes — Talk Track</h1>
-    <div class="sub">A structured walkthrough of the five lab scenarios. Covers what to say, what to run, and what the output means.</div>
+    <div class="sub">Plain-language walkthrough — what to say, what to run, and how to answer questions.</div>
     <div class="author">Author: Abhijeet Lokhande (SA APJ)</div>
   </div>
 
+  <!-- Timing overview -->
   <table>
     <thead>
-      <tr><th>Time</th><th>Segment</th><th>Script command</th></tr>
+      <tr><th>Time</th><th>What you cover</th><th>Command</th></tr>
     </thead>
     <tbody>
-      <tr><td>0–5 min</td><td>The problem — why default etcd is not secure</td><td>—</td></tr>
-      <tr><td>5–10 min</td><td>Vault side — Transit key, policy, AppRole</td><td><code>./vault-demo kms-setup</code></td></tr>
-      <tr><td>10–17 min</td><td>Proof — live etcdctl dump, ciphertext vs plaintext</td><td><code>./vault-demo kms-verify</code></td></tr>
-      <tr><td>17–23 min</td><td>Zero-downtime key rotation</td><td><code>./vault-demo kms-rotate</code></td></tr>
-      <tr><td>23–28 min</td><td>Resilience — Vault outage behaviour</td><td><code>./vault-demo kms-failover</code></td></tr>
-      <tr><td>28–32 min</td><td>Observability — metrics and audit log</td><td><code>./vault-demo kms-telemetry</code></td></tr>
-      <tr><td>32–35 min</td><td>Production best practices</td><td>—</td></tr>
+      <tr><td>0–5 min</td><td>The problem with default Kubernetes secrets</td><td>—</td></tr>
+      <tr><td>5–10 min</td><td>How Vault is set up (key, policy, AppRole)</td><td><code>./vault-demo kms-setup</code></td></tr>
+      <tr><td>10–17 min</td><td>Live proof — etcd dump shows ciphertext only</td><td><code>./vault-demo kms-verify</code></td></tr>
+      <tr><td>17–23 min</td><td>Key rotation — one command, no downtime</td><td><code>./vault-demo kms-rotate</code></td></tr>
+      <tr><td>23–28 min</td><td>What happens when Vault goes down</td><td><code>./vault-demo kms-failover</code></td></tr>
+      <tr><td>28–32 min</td><td>Audit log and metrics</td><td><code>./vault-demo kms-telemetry</code></td></tr>
+      <tr><td>32–35 min</td><td>What to do differently in production</td><td>—</td></tr>
     </tbody>
   </table>
 
@@ -258,226 +253,237 @@
       <rect x="10" y="10" width="130" height="40" rx="6" fill="#f7f8fa" stroke="#e5e7eb" stroke-width="1.5"/>
       <text x="75" y="26" text-anchor="middle" font-weight="700" fill="#1f2328">kubectl</text>
       <text x="75" y="42" text-anchor="middle" fill="#57606a">write / read secret</text>
-      <line x1="140" y1="30" x2="200" y2="30" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr2)"/>
+      <line x1="140" y1="30" x2="200" y2="30" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr3)"/>
       <text x="170" y="25" text-anchor="middle" fill="#57606a" font-size="10">HTTPS</text>
       <rect x="200" y="10" width="150" height="40" rx="6" fill="#fff" stroke="#1f2328" stroke-width="2"/>
       <text x="275" y="26" text-anchor="middle" font-weight="700" fill="#1f2328">kube-apiserver</text>
-      <text x="275" y="42" text-anchor="middle" fill="#57606a">encryption-provider-config</text>
-      <line x1="350" y1="30" x2="420" y2="30" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr2)"/>
-      <text x="385" y="22" text-anchor="middle" fill="#57606a" font-size="10">gRPC / Unix</text>
+      <text x="275" y="42" text-anchor="middle" fill="#57606a">encryption enabled</text>
+      <line x1="350" y1="30" x2="420" y2="30" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr3)"/>
+      <text x="385" y="22" text-anchor="middle" fill="#57606a" font-size="10">Unix socket</text>
       <text x="385" y="33" text-anchor="middle" fill="#57606a" font-size="10">KMS v2</text>
       <rect x="420" y="10" width="155" height="40" rx="6" fill="#f7f8fa" stroke="#e5e7eb" stroke-width="1.5"/>
       <text x="497" y="26" text-anchor="middle" font-weight="700" fill="#1f2328">vault-kube-kms</text>
-      <text x="497" y="42" text-anchor="middle" fill="#57606a">plugin (Linux binary)</text>
-      <line x1="497" y1="50" x2="497" y2="90" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr2)"/>
-      <text x="530" y="76" fill="#57606a" font-size="10">Vault API</text>
+      <text x="497" y="42" text-anchor="middle" fill="#57606a">plugin (runs on node)</text>
+      <line x1="497" y1="50" x2="497" y2="90" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr3)"/>
+      <text x="535" y="76" fill="#57606a" font-size="10">Vault API</text>
       <rect x="380" y="90" width="240" height="55" rx="6" fill="#fff" stroke="#3b82d4" stroke-width="2"/>
       <text x="500" y="109" text-anchor="middle" font-weight="700" fill="#3b82d4">Vault Enterprise</text>
       <text x="500" y="126" text-anchor="middle" fill="#57606a">Transit engine · transit/keys/kms</text>
-      <text x="500" y="140" text-anchor="middle" fill="#57606a">KEK (AES-256-GCM96)</text>
-      <line x1="275" y1="50" x2="275" y2="165" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr2)"/>
-      <text x="248" y="115" fill="#57606a" font-size="10">wrapped</text>
-      <text x="248" y="126" fill="#57606a" font-size="10">DEK only</text>
+      <text x="500" y="140" text-anchor="middle" fill="#57606a">Master key (AES-256-GCM96)</text>
+      <line x1="275" y1="50" x2="275" y2="165" stroke="#e5e7eb" stroke-width="1.5" marker-end="url(#arr3)"/>
+      <text x="244" y="112" fill="#57606a" font-size="10">encrypted</text>
+      <text x="244" y="123" fill="#57606a" font-size="10">data only</text>
       <rect x="170" y="165" width="210" height="42" rx="6" fill="#f7f8fa" stroke="#e5e7eb" stroke-width="1.5"/>
       <text x="275" y="183" text-anchor="middle" font-weight="700" fill="#1f2328">etcd</text>
       <text x="275" y="199" text-anchor="middle" fill="#57606a" font-size="11">k8s:enc:kms:v2:vault-kube-kms:…</text>
       <defs>
-        <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
           <path d="M0,0 L0,6 L8,3 Z" fill="#e5e7eb"/>
         </marker>
       </defs>
     </svg>
   </div>
 
+  <!-- ── Section 0 ── -->
   <div class="section-hdr">
     <div class="num" style="background:#57606a">0</div>
     <h2>The Problem</h2>
     <span class="badge-time">5 min</span>
   </div>
 
-  <div class="talking-point">
-    "Kubernetes secrets are called secrets, but by default they are not secret at the storage layer. etcd stores them as base64-encoded data. Base64 is encoding, not encryption — anyone with read access to the etcd data directory, an etcd backup file, or a cloud-managed snapshot can decode every secret in the cluster with a single command."
+  <div class="say">
+    "By default, Kubernetes stores all secrets in a database called etcd. The data is base64-encoded — which just means it's been converted to text. It is <em>not</em> encrypted. Anyone who gets their hands on an etcd backup, a disk snapshot, or even just read access to the etcd data directory can decode every password, token, and certificate in the cluster using a single command. That includes cloud providers, storage admins, and anyone who steals a backup."
   </div>
 
-  <div class="talking-point">
-    "The Kubernetes API server supports a KMS provider interface. When it is configured, every write to etcd goes through an external key manager. The secret data is encrypted before it reaches storage, and the key never touches etcd or the cluster nodes. That key manager can be Vault."
+  <div class="say">
+    "Kubernetes has a built-in way to fix this: you can plug in an external key manager that encrypts every secret before it lands in etcd. Vault is that key manager here. The key that does the encrypting lives inside Vault and never leaves it. So even if someone walks out with the etcd data, all they have is noise."
   </div>
 
-  <div class="insight">
-    <div class="label">Background</div>
-    The encryption uses an envelope model: Kubernetes generates a short-lived Data Encryption Key (DEK) per secret. Vault's Transit engine wraps that DEK with a long-lived Key Encryption Key (KEK). Only the wrapped DEK lands in etcd — the KEK never leaves Vault. Decryption requires both etcd (for the wrapped DEK) and Vault (for the KEK), so neither alone is sufficient.
+  <div class="tip">
+    <div class="label">Simple analogy if needed</div>
+    Think of it like this: etcd is a filing cabinet. Right now the files inside are just in a foreign language (base64) — anyone who speaks the language can read them. With Vault KMS, the files are locked with a padlock, and Vault is the only place that key exists.
   </div>
 
+  <!-- ── Section 1 ── -->
   <div class="section-hdr">
     <div class="num">1</div>
-    <h2>Vault Side — Transit Key, Policy, AppRole</h2>
+    <h2>How Vault is Set Up</h2>
     <span class="badge-time">5 min</span>
   </div>
 
-  <div class="talking-point">
-    "Before we look at etcd, let me show what Vault is doing. We configure three things: a Transit key that acts as the KEK, a minimum-privilege policy that the plugin uses to call Transit, and an AppRole so the plugin can authenticate without a human in the loop."
+  <div class="say">
+    "Before we look at the proof, let me show you three things we set up in Vault. First, a Transit key — this is the master key Vault uses to encrypt and decrypt. Second, a policy that limits exactly what the plugin is allowed to do: encrypt, decrypt, and nothing else. Third, an AppRole — a machine credential so the plugin can log in to Vault automatically on startup."
   </div>
 
-  <div class="step">Walk through (already configured by bootstrap)</div>
-  <div class="cmd"><span class="cmt"># Show the Transit key — the KEK that wraps all Kubernetes DEKs</span>
+  <div class="step">Walk through — already done by bootstrap</div>
+  <div class="cmd"># The master key — everything flows through this
 vault read transit/keys/kms
 
-<span class="cmt"># Show the policy — minimum required paths for the plugin</span>
+# The policy — plugin can only touch transit/keys/kms
 vault policy read transit-encrypt-decrypt
 
-<span class="cmt"># Show the AppRole role</span>
+# The AppRole — how the plugin authenticates
 vault read auth/approle/role/kube-kms</div>
 
-  <div class="talking-point">
-    "The policy has four paths: encrypt, decrypt, read the key (for status polling), and <code>sys/license/status</code> so the plugin can verify it is talking to Vault Enterprise. The plugin cannot read or write anything outside Transit."
+  <div class="say">
+    "The plugin gets a one-time credential at startup and uses token renewal after that. No passwords sitting in config files."
   </div>
 
-  <div class="talking-point">
-    "The AppRole secret-id lives at <code>/tmp/approle-secret-id</code> inside the kind node, mode 0400. The plugin authenticates once at startup and uses token renewal from that point on. No static credentials sitting in a config file."
+  <div class="qa">
+    <div class="qa-q">Question: "What if someone steals the AppRole credential?"</div>
+    <div class="qa-a">
+      "The credential has a short lifespan — one hour in this lab, shorter in production. If it's stolen, an attacker can only use it to call <em>encrypt</em> and <em>decrypt</em> on that one specific key. They can't read the key itself, they can't create new keys, they can't touch anything else in Vault. And every single call they make shows up in the audit log with a timestamp. You'd see it immediately."
+    </div>
   </div>
 
+  <!-- ── Section 2 ── -->
   <div class="section-hdr">
     <div class="num">2</div>
-    <h2>The Proof — etcdctl Dump</h2>
+    <h2>Live Proof — etcd Shows Only Ciphertext</h2>
     <span class="badge-time">7 min</span>
   </div>
 
-  <div class="talking-point">
-    "I am going to write a Kubernetes secret — completely normally, the same way any application or developer would. Then I will bypass Kubernetes entirely and read the raw bytes from etcd."
+  <div class="say">
+    "I'm going to write a Kubernetes secret the normal way — the same command any developer or application would use. Then I'm going to bypass Kubernetes entirely and look directly at what's stored in etcd."
   </div>
 
   <div class="step">Run</div>
   <div class="cmd">./vault-demo kms-verify</div>
 
-  <div class="talking-point">
-    "Look at the raw etcd output. The entry begins with <strong>k8s:enc:kms:v2:vault-kube-kms:</strong> — that is the KMS v2 ciphertext marker. Everything after it is encrypted data. The plaintext value is not in etcd at all."
+  <div class="say">
+    "Look at that raw output from etcd. It starts with <strong>k8s:enc:kms:v2:vault-kube-kms:</strong> — that's the marker the API server writes to say this entry is encrypted by Vault. Everything after it is scrambled data. The password we just wrote is nowhere in there."
   </div>
 
-  <div class="insight">
-    <div class="label">What the output means</div>
-    <strong>k8s:enc:kms:v2:vault-kube-kms:</strong> — the API server wrote this prefix to mark the entry as KMS v2 encrypted. The bytes that follow are the wrapped DEK seed. To read the secret, Vault must unwrap the DEK. Without Vault, this data is unusable.
-  </div>
-
-  <div class="talking-point">
-    "Now watch what happens when I read it back through the Kubernetes API."
+  <div class="point">
+    <div class="label">Point at on screen</div>
+    (1) The raw etcd line starting with <code>k8s:enc:kms:v2:vault-kube-kms:</code><br>
+    (2) The confirmation that the plaintext is absent from etcd<br>
+    (3) The <code>kubectl get secret</code> output returning the correct value — decrypted live by Vault
   </div>
 
   <div class="qa">
-    <div class="qa-q">Expected question: "Wait — if it's encrypted, how are you reading it as plaintext with kubectl?"</div>
+    <div class="qa-q">Question: "If it's encrypted, how does kubectl still return the right value?"</div>
     <div class="qa-a">
-      "That is exactly the right question. <code>kubectl get secret</code> goes through the Kubernetes API server — not directly to etcd. When the API server received that read request, it fetched the ciphertext from etcd, then called vault-kube-kms over the Unix socket to decrypt the DEK seed, then used that seed to decrypt the secret data, and only then returned the plaintext to kubectl. The decryption happened inside the API server, on this machine, in real time, by calling Vault. Vault is the only entity that holds the key encryption key. No cloud storage service, no etcd administrator, no one with a copy of the etcd backup can do that — they get the ciphertext. Only a process with valid Vault credentials and the correct policy can trigger that decryption, and every time it happens it is logged in Vault's audit trail."
+      "Great question. When you run <code>kubectl get secret</code>, the request goes to the Kubernetes API server — not directly to etcd. The API server fetches the scrambled data from etcd, then calls the vault-kube-kms plugin over a private socket on the same node, asks Vault to decrypt it, gets the plain value back, and returns it to you. That round trip through Vault happens every single time a secret is read. Every one of those calls is logged. If someone reads a secret at 3am on a Sunday, that's in the audit log."
     </div>
   </div>
 
-  <div class="outcome">
-    <div class="label">What to point at on screen</div>
-    (1) The raw etcd bytes starting with <code>k8s:enc:kms:v2:vault-kube-kms:</code>
-    &nbsp;·&nbsp;
-    (2) The grep showing zero matches for the plaintext value
-    &nbsp;·&nbsp;
-    (3) The kubectl output returning the correct plaintext — decrypted by Vault on this read
+  <div class="qa">
+    <div class="qa-q">Question: "Does this slow things down?"</div>
+    <div class="qa-a">
+      "The plugin runs on the same node as the API server and communicates over a local Unix socket — it's just a file on disk, not a network call. Round-trip latency is typically under 5 milliseconds. For most applications you won't notice it. We can actually see the latency numbers in the metrics at the end."
+    </div>
   </div>
 
+  <!-- ── Section 3 ── -->
   <div class="section-hdr">
     <div class="num">3</div>
-    <h2>Zero-Downtime Key Rotation</h2>
+    <h2>Key Rotation — One Command, No Downtime</h2>
     <span class="badge-time">6 min</span>
   </div>
 
-  <div class="talking-point">
-    "Key rotation is one of those requirements that sounds straightforward but in practice often means a maintenance window. With Vault Transit and KMS v2, rotation is a single API call. No API server restart. No application downtime. The plugin detects the new key version automatically through the KMS v2 Status RPC."
+  <div class="say">
+    "Security policies usually require rotating encryption keys every 90 days. With most systems, key rotation means a maintenance window — you have to re-encrypt everything, coordinate with your Kubernetes team, probably restart something. Here it's one command."
   </div>
 
   <div class="step">Run</div>
   <div class="cmd">./vault-demo kms-rotate</div>
 
-  <div class="talking-point">
-    "We rotated from version 1 to version 2. <code>min_decryption_version</code> is still 1 — Vault retains the old key version so it can decrypt data written before the rotation. Nothing breaks. Data written before the rotation is still readable. Data written after uses the new key."
+  <div class="say">
+    "We just went from key version 1 to version 2. The API server is running. Applications are running. Nothing was restarted. Vault kept the old key version around so it can still decrypt anything that was written before the rotation. You can run this rotation automatically on a schedule — a cron job, a CI pipeline, whatever fits your workflow."
   </div>
 
-  <div class="insight">
-    <div class="label">Operational note</div>
-    A typical rotation policy is 90 days. With Vault, that means a cron job runs <code>vault write -f transit/keys/kms/rotate</code> and then <code>kubectl get secrets --all-namespaces -o json | kubectl replace -f -</code>. Zero coordination with Kubernetes operators. The audit log shows exactly when each rotation happened.
+  <div class="qa">
+    <div class="qa-q">Question: "What about secrets that were written with the old key?"</div>
+    <div class="qa-a">
+      "They're still readable. Vault keeps all previous key versions available for decryption. We also re-encrypt all existing secrets as part of the rotation — after that, everything is on the new key. Only then would you tell Vault to retire the old version."
+    </div>
   </div>
 
+  <!-- ── Section 4 ── -->
   <div class="section-hdr">
     <div class="num">4</div>
-    <h2>Resilience — Vault Outage Behaviour</h2>
+    <h2>What Happens When Vault Goes Down</h2>
     <span class="badge-time">5 min</span>
   </div>
 
-  <div class="talking-point">
-    "KMS v2 has a specific and well-defined behaviour when Vault is unreachable. Let me show you exactly what happens."
+  <div class="say">
+    "This is the question everyone asks: what if Vault is unavailable? Let me show you exactly what happens instead of just telling you."
   </div>
 
   <div class="step">Run</div>
   <div class="cmd">./vault-demo kms-failover</div>
 
-  <div class="talking-point">
-    "Vault is stopped. Reading an existing secret succeeds — that is KMS v2's DEK-seed caching. The API server caches the decryption seed in memory after processing each secret. As long as the API server has not restarted, it can serve reads for any secret it has already seen without contacting Vault."
+  <div class="say">
+    "Vault is stopped. We just read an existing secret — and it worked. The API server keeps recently-used decryption information in memory. As long as the API server hasn't restarted, it can serve reads for secrets it's already seen without contacting Vault."
   </div>
 
-  <div class="talking-point">
-    "A write fails with a 3-second timeout. The API server tried to call the plugin to encrypt a new DEK seed, could not reach Vault, and rejected the write rather than storing unencrypted data."
+  <div class="say">
+    "Now watch a new write — it fails. The API server tried to contact Vault to encrypt the new data, couldn't reach it after 3 seconds, and refused to store it unencrypted. That's the right behaviour — it would rather fail the write than silently store your password in plaintext."
   </div>
 
-  <div class="insight">
-    <div class="label">What this means for Vault HA</div>
-    The HA requirement for Vault in a KMS deployment is <strong>write availability</strong>, not read availability. Existing secrets remain readable during a Vault outage. Only new writes fail. This is the reason why Vault HA Replication is the right solution for this failure mode.
+  <div class="tip">
+    <div class="label">The key point for the customer</div>
+    If Vault goes down, your cluster keeps running and existing secrets keep working. Only <em>new</em> secret writes fail. This means Vault's uptime requirement is about write availability — existing workloads are not affected by a brief Vault outage. This is why Vault HA is the right answer for production.
   </div>
 
+  <div class="say">
+    "Now we bring Vault back up, unseal it — and writes immediately start working again. No manual intervention, no plugin restart needed."
+  </div>
+
+  <!-- ── Section 5 ── -->
   <div class="section-hdr">
     <div class="num">5</div>
-    <h2>Observability — Metrics and Audit Log</h2>
+    <h2>Audit Log and Metrics</h2>
     <span class="badge-time">4 min</span>
   </div>
 
-  <div class="talking-point">
-    "Every encrypt and decrypt the API server performs is logged in Vault's audit log. Let me show two views: the structured audit log and the plugin's Prometheus metrics."
+  <div class="say">
+    "Two quick things here: every encrypt and decrypt operation is in Vault's audit log with a timestamp and the identity that triggered it. And the plugin exposes a metrics endpoint you can scrape with Prometheus."
   </div>
 
   <div class="step">Run</div>
   <div class="cmd">./vault-demo kms-telemetry</div>
 
-  <div class="talking-point">
-    "The audit log entries show timestamp, operation, key path, and identity. In production you can enrich the AppRole token with cluster name, namespace, or environment — that context appears in every audit entry."
+  <div class="say">
+    "Each audit log entry tells you when the operation happened, what path it touched, and what authenticated identity called it. In production you'd enrich the AppRole token with metadata — cluster name, environment, team — so the log is even more useful for investigations."
   </div>
 
-  <div class="insight">
-    <div class="label">What rpc_server_duration_milliseconds shows</div>
-    This is a latency histogram for every KMS v2 gRPC call from the API server to the plugin — how long each encrypt or decrypt round-trip takes. Low values (single-digit milliseconds) indicate a healthy plugin. Latency spikes here mean Vault is slow or the path to it is congested. Scrape this from <code>http://127.0.0.1:9090/metrics</code> inside the kind node.
+  <div class="say">
+    "The metrics show how fast each encrypt and decrypt call is. If those numbers spike, it means Vault is slow or overloaded — you'd get an alert before users notice anything."
   </div>
 
+  <!-- ── Section 6 ── -->
   <div class="section-hdr">
     <div class="num" style="background:#57606a">✓</div>
-    <h2>Production Best Practices</h2>
+    <h2>What to Do Differently in Production</h2>
     <span class="badge-time">3 min</span>
   </div>
 
   <div class="bp-grid">
     <div class="bp-card">
-      <div class="bp-title">Rotate the KEK on a schedule</div>
-      <div class="bp-detail">90-day rotation is a common baseline. Vault's <code>auto_rotate_period</code> on the Transit key can automate this without any external scheduler.</div>
+      <div class="bp-title">Run Vault in HA mode</div>
+      <div class="bp-detail">As the failover demo showed, write availability depends on Vault being up. Deploy Vault with at least 3 nodes and a Raft backend, or use HCP Vault.</div>
     </div>
     <div class="bp-card">
-      <div class="bp-title">Restrict the AppRole secret-id</div>
-      <div class="bp-detail">Set <code>secret_id_num_uses=1</code> and automate renewal. In production back it with a secrets manager or use Vault Agent.</div>
+      <div class="bp-title">Rotate the key on a schedule</div>
+      <div class="bp-detail">90 days is a common baseline. Vault's <code>auto_rotate_period</code> on the Transit key handles this automatically — no external scheduler needed.</div>
     </div>
     <div class="bp-card">
-      <div class="bp-title">Use short token TTLs</div>
-      <div class="bp-detail">The lab uses <code>token_ttl=1h</code>. Keep TTLs short and rely on renewal. A compromised token expires quickly.</div>
+      <div class="bp-title">Turn on TLS between plugin and Vault</div>
+      <div class="bp-detail">This lab uses <code>--tls-skip-verify</code> for simplicity. In production the plugin should verify Vault's certificate — just point it at your CA file.</div>
     </div>
     <div class="bp-card">
-      <div class="bp-title">Deploy Vault HA for write availability</div>
-      <div class="bp-detail">As shown in the resilience scenario: reads survive a Vault outage, writes do not. Vault HA Replication ensures the KMS path stays available.</div>
+      <div class="bp-title">Keep the AppRole credential short-lived</div>
+      <div class="bp-detail">The lab uses a 1-hour token. In production use Vault Agent to manage credential renewal so the plugin never holds a long-lived credential.</div>
     </div>
     <div class="bp-card">
-      <div class="bp-title">Enable TLS between plugin and Vault</div>
-      <div class="bp-detail">This lab uses <code>--tls-skip-verify</code> for simplicity. In production the plugin should verify Vault's TLS certificate.</div>
+      <div class="bp-title">Alert on the plugin health endpoint</div>
+      <div class="bp-detail">The plugin exposes <code>/readyz</code> on port 8081. If it returns non-200, new secret writes will start failing within 3 seconds. Alert before that happens.</div>
     </div>
     <div class="bp-card">
-      <div class="bp-title">Alert on plugin health endpoints</div>
-      <div class="bp-detail">Scrape <code>/healthz</code> and <code>/readyz</code> (port 8081). A non-200 from <code>/readyz</code> means new secret writes will fail within 3 seconds.</div>
+      <div class="bp-title">Keep the Vault audit log</div>
+      <div class="bp-detail">Stream it to your SIEM. Every encrypt and decrypt call is there — timestamp, identity, key path. This is your evidence trail for compliance audits.</div>
     </div>
   </div>
 
