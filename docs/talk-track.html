@@ -158,6 +158,29 @@
   .step { font-size: 11px; font-weight: 700; text-transform: uppercase;
           letter-spacing: 0.05em; color: #57606a; margin: 14px 0 5px; }
 
+  /* Q&A challenge/response */
+  .qa {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    font-size: 13px;
+  }
+  .qa-q {
+    background: #f7f8fa;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 8px 14px;
+    font-weight: 600;
+    color: #57606a;
+    font-size: 12px;
+  }
+  .qa-a {
+    padding: 10px 14px;
+    font-style: italic;
+    color: #1f2328;
+    line-height: 1.65;
+  }
+
   .bp-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -287,7 +310,14 @@ vault read auth/approle/role/kube-kms</div>
   </div>
 
   <div class="talking-point">
-    "<code>kubectl get secret</code> returns the correct plaintext. The API server called Vault Transit in the background to decrypt the DEK seed, then used it to decrypt the secret before returning it. This decryption is transparent to any application using the Kubernetes API, and it is logged in Vault's audit log every time it happens."
+    "Now watch what happens when I read it back through the Kubernetes API."
+  </div>
+
+  <div class="qa">
+    <div class="qa-q">Expected question: "Wait — if it's encrypted, how are you reading it as plaintext with kubectl?"</div>
+    <div class="qa-a">
+      "That is exactly the right question. <code>kubectl get secret</code> goes through the Kubernetes API server — not directly to etcd. When the API server received that read request, it fetched the ciphertext from etcd, then called vault-kube-kms over the Unix socket to decrypt the DEK seed, then used that seed to decrypt the secret data, and only then returned the plaintext to kubectl. The decryption happened inside the API server, on this machine, in real time, by calling Vault. Vault is the only entity that holds the key encryption key. No cloud storage service, no etcd administrator, no one with a copy of the etcd backup can do that — they get the ciphertext. Only a process with valid Vault credentials and the correct policy can trigger that decryption, and every time it happens it is logged in Vault's audit trail."
+    </div>
   </div>
 
   <div class="outcome">
