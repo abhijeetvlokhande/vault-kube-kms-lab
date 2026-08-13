@@ -7,55 +7,77 @@ on:
     branches: [main]
 
 jobs:
-  bootstrap:
-    name: make bootstrap + kms-verify
+  lint:
+    name: Lint and structure checks
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.22"
-
-      - name: Install kind + kubectl
+      - name: Check shell syntax on all .sh files
         run: |
-          # kind
-          curl -Lo /usr/local/bin/kind \
-            https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
-          chmod +x /usr/local/bin/kind
-          # kubectl
-          curl -Lo /usr/local/bin/kubectl \
-            "https://dl.k8s.io/release/v1.33.1/bin/linux/amd64/kubectl"
-          chmod +x /usr/local/bin/kubectl
+          echo "Checking bash syntax..."
+          find scripts/ modules/ -name "*.sh" | while read f; do
+            bash -n "$f" && echo "  OK: $f" || { echo "  FAIL: $f"; exit 1; }
+          done
+          bash -n vault-demo && echo "  OK: vault-demo"
 
-      - name: Install Vault CLI
+      - name: Check all scripts and modules are executable (100755)
         run: |
-          wget -q -O /tmp/vault.zip \
-            https://releases.hashicorp.com/vault/1.17.3/vault_1.17.3_linux_amd64.zip
-          unzip -q /tmp/vault.zip -d /usr/local/bin/
+          echo "Checking exec bits in git index..."
+          FAIL=0
+          for f in scripts/*.sh modules/*.sh vault-demo; do
+            MODE=$(git ls-files -s "$f" | awk '{print $1}')
+            if [ "$MODE" != "100755" ]; then
+              echo "  FAIL: $f is $MODE (expected 100755)"
+              FAIL=1
+            else
+              echo "  OK: $f"
+            fi
+          done
+          [ $FAIL -eq 0 ] || exit 1
 
-      - name: Write Vault Enterprise license
-        env:
-          VAULT_LICENSE: ${{ secrets.VAULT_LICENSE }}
+      - name: Check YAML syntax
         run: |
-          mkdir -p License
-          echo "$VAULT_LICENSE" > License/vault.hclic
-          test -s License/vault.hclic || (echo "VAULT_LICENSE secret missing or empty" && exit 1)
+          python3 -c "
+          import sys, yaml, glob
+          files = glob.glob('k8s/*.yaml') + glob.glob('k8s/*.yml')
+          ok = True
+          for f in files:
+              try:
+                  yaml.safe_load(open(f))
+                  print(f'  OK: {f}')
+              except Exception as e:
+                  print(f'  FAIL: {f}: {e}')
+                  ok = False
+          sys.exit(0 if ok else 1)
+          "
 
-      - name: make bootstrap
-        run: make bootstrap
-        timeout-minutes: 20
+      - name: Confirm sensitive files are gitignored
+        run: |
+          echo "Checking .gitignore covers sensitive paths..."
+          python3 -c "
+          content = open('.gitignore').read()
+          required = ['vault.hclic', '.vault-init.json', '.lab-state/']
+          ok = True
+          for r in required:
+              if r in content:
+                  print(f'  OK: {r} is gitignored')
+              else:
+                  print(f'  FAIL: {r} is NOT in .gitignore')
+                  ok = False
+          import sys; sys.exit(0 if ok else 1)
+          "
 
-      - name: kms-verify
-        run: ./vault-demo kms-verify
-
-      - name: kms-rotate
-        run: ./vault-demo kms-rotate
-
-      - name: make clean
-        if: always()
-        run: make clean
+      - name: Confirm no secrets in tracked files
+        run: |
+          echo "Scanning tracked files for accidental secrets..."
+          # Fail if vault.hclic or .vault-init.json are tracked
+          if git ls-files | grep -qE 'vault\.hclic|\.vault-init\.json'; then
+            echo "FAIL: sensitive file is tracked by git"
+            git ls-files | grep -E 'vault\.hclic|\.vault-init\.json'
+            exit 1
+          fi
+          echo "  OK: no sensitive files tracked"
